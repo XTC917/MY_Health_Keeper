@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: 'https://6186-2001-da8-201d-1113-00-f435.ngrok-free.app/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -21,9 +21,7 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-
     console.error('请求拦截器错误:', error);
-    
     return Promise.reject(error);
   }
 );

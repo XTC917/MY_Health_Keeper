@@ -15,6 +15,11 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/api/cart")
+@CrossOrigin(origins = {
+    "http://localhost:8080",
+    "https://my-health-keeper.vercel.app",
+    "https://6186-2001-da8-201d-1113-00-f435.ngrok-free.app"
+}, allowCredentials = "true")
 public class CartController {
     @Autowired
     private CartService cartService;
@@ -100,8 +105,7 @@ public class CartController {
             return ResponseEntity.badRequest()
                     .body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
-            log.error("Unexpected error removing item from cart - Item ID: {}, User: {}", 
-                    itemId, authentication.getName(), e);
+            log.error("Unexpected error removing item from cart - User: {}, Item ID: {}", authentication.getName(), itemId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("Failed to remove item from cart: " + e.getMessage()));
         }

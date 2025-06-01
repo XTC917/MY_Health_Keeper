@@ -94,11 +94,15 @@ export default {
         console.log('Fetching cart...');
         const response = await cartApi.getCart();
         console.log('Cart response:', response);
-        cart.value = response.data;
-        console.log('Cart data:', cart.value);
+        if (response.data && response.data.items) {
+          cart.value = response.data;
+          console.log('Cart data:', cart.value);
+        } else {
+          throw new Error('Invalid cart data format');
+        }
       } catch (err) {
         console.error('Error fetching cart:', err);
-        error.value = err.response?.data?.message || '获取购物车失败';
+        error.value = err.response?.data?.message || err.message || '获取购物车失败';
         ElMessage.error(error.value);
         cart.value = null;
       } finally {
@@ -108,12 +112,21 @@ export default {
 
     const updateQuantity = async (itemId, quantity) => {
       try {
+        if (quantity <= 0) {
+          ElMessage.warning('数量必须大于0');
+          await fetchCart();
+          return;
+        }
         const response = await cartApi.updateCartItemQuantity(itemId, quantity);
-        cart.value = response.data;
-        ElMessage.success('更新成功');
+        if (response.data && response.data.items) {
+          cart.value = response.data;
+          ElMessage.success('更新成功');
+        } else {
+          throw new Error('Invalid cart data format');
+        }
       } catch (err) {
         console.error('Error updating quantity:', err);
-        ElMessage.error('更新数量失败');
+        ElMessage.error(err.response?.data?.message || err.message || '更新数量失败');
         await fetchCart();
       }
     };
@@ -121,17 +134,26 @@ export default {
     const removeItem = async (itemId) => {
       try {
         const response = await cartApi.removeFromCart(itemId);
-        cart.value = response.data;
-        ElMessage.success('删除成功');
+        if (response.data && response.data.items) {
+          cart.value = response.data;
+          ElMessage.success('删除成功');
+        } else {
+          throw new Error('Invalid cart data format');
+        }
       } catch (err) {
         console.error('Error removing item:', err);
-        ElMessage.error('删除失败');
+        ElMessage.error(err.response?.data?.message || err.message || '删除失败');
+        await fetchCart();
       }
     };
 
     const checkout = async () => {
       try {
         loading.value = true;
+        if (!cart.value || !cart.value.items || cart.value.items.length === 0) {
+          ElMessage.warning('购物车为空');
+          return;
+        }
         // 将购物车数据存储到 sessionStorage
         const cartData = {
           items: cart.value.items.map(item => ({
@@ -147,7 +169,7 @@ export default {
         router.push('/home/checkout');
       } catch (err) {
         console.error('Error during checkout:', err);
-        ElMessage.error('结算失败');
+        ElMessage.error(err.response?.data?.message || err.message || '结算失败');
       } finally {
         loading.value = false;
       }

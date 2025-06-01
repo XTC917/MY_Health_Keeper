@@ -11,8 +11,19 @@
   ],
   "routes": [
     {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/frontend/health-keeper-frontend/dist/assets/$1"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/frontend/health-keeper-frontend/dist/favicon.ico"
+    },
+    {
       "src": "/(.*)",
-      "dest": "/frontend/health-keeper-frontend/dist/$1"
+      "dest": "/frontend/health-keeper-frontend/dist/index.html"
     }
   ]
 } 

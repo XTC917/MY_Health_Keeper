@@ -1,10 +1,10 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://8df3-110-65-147-212.ngrok-free.app/api',
+  baseURL: 'https://d9a2-116-6-234-178.ngrok-free.app/api',
   headers: {
     'Content-Type': 'application/json',
-    'ngrok-skip-browser-warning': 'true'  // 添加这个请求头来跳过ngrok的警告页面
+    'ngrok-skip-browser-warning': 'true'
   },
   timeout: 10000, // 10 秒超时
 });
@@ -19,6 +19,7 @@ api.interceptors.request.use(
     } else {
       console.warn('未找到用户Token，请求将不包含认证信息');
     }
+    config.headers['ngrok-skip-browser-warning'] = 'true';
     console.log(`发送${config.method.toUpperCase()}请求到: ${config.baseURL}${config.url}`, config.data || config.params);
     return config;
   },

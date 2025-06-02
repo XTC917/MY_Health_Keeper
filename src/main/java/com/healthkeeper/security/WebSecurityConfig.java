@@ -97,10 +97,17 @@ public class WebSecurityConfig {
             "http://localhost:8080",
             "http://localhost:8081",
             "https://my-health-keeper.vercel.app",
-            "https://8df3-110-65-147-212.ngrok-free.app "
+            "https://d9a2-116-6-234-178.ngrok-free.app"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "*"));
+        configuration.setAllowedHeaders(Arrays.asList(
+            "Authorization", 
+            "Content-Type", 
+            "X-Requested-With", 
+            "Accept", 
+            "*",
+            "ngrok-skip-browser-warning"
+        ));
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);

@@ -76,10 +76,7 @@ public class WebSecurityConfig {
             .requestMatchers("/api/orders/**").hasRole("USER")  // 订单相关操作需要登录
             
             // 好友接口权限配置
-            .requestMatchers("/api/friends/**").hasRole("USER")  // 好友列表允许 USER 角色
-            .requestMatchers("/api/friends/requests").hasRole("ADMIN") // 好友请求需要 ADMIN 角色
-            .requestMatchers(HttpMethod.GET, "/api/friends/requests").hasRole("USER") // 允许 GET
-            .requestMatchers(HttpMethod.POST, "/api/friends/requests").hasRole("USER") // 允许 POST
+            .requestMatchers("/api/friends/**").hasRole("USER")  // 所有好友相关操作都需要USER角色
             
             .requestMatchers("/api/training/**").authenticated()
             .anyRequest().authenticated();

@@ -301,33 +301,32 @@ export default {
       const token = localStorage.getItem('token');
       if (!token) {
         ElMessage.error('未检测到登录令牌，请重新登录');
-        //router.push('/login');
-        return;
-      }
-
-      // 验证令牌格式（必须包含两个句点）
-      if (token.split('.').length !== 3) {
-        ElMessage.error('令牌格式错误，请重新登录');
-        localStorage.removeItem('token');
-        //router.push('/login');
+        router.push('/login');
         return;
       }
 
       try {
-        // 发送请求时携带令牌
+        console.log('正在加载好友列表...');
         const res = await axios.get('/api/friends', {
           headers: {
-            Authorization: `Bearer ${token}`, // 确保正确拼接 "Bearer "
-            params: { _: new Date().getTime() } // 添加时间戳绕过缓存
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         });
+        console.log('好友列表响应:', res.data);
         friends.value = res.data;
       } catch (error) {
-        if (error.response && error.response.status === 403) {
-          ElMessage.error('权限不足，请检查令牌有效性');
-          router.push('/login');
+        console.error('加载好友列表失败:', error);
+        if (error.response) {
+          console.error('错误响应:', error.response.data);
+          if (error.response.status === 403) {
+            ElMessage.error('权限不足，请重新登录');
+            router.push('/login');
+          } else {
+            ElMessage.error(`加载失败: ${error.response.data.message || '未知错误'}`);
+          }
         } else {
-          ElMessage.error('加载好友列表失败');
+          ElMessage.error('网络错误，请检查网络连接');
         }
       }
     };
@@ -335,14 +334,37 @@ export default {
     // 加载待处理请求
     const loadRequests = async () => {
       const token = localStorage.getItem('token');
-      const res = await axios.get('/api/friends/requests', {
-        headers: {
-          Authorization: `Bearer ${token}` // 添加头
+      if (!token) {
+        ElMessage.error('未检测到登录令牌，请重新登录');
+        router.push('/login');
+        return;
+      }
+
+      try {
+        console.log('正在加载好友请求...');
+        const res = await axios.get('/api/friends/requests', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        console.log('好友请求响应:', res.data);
+        pendingRequests.value = res.data;
+      } catch (error) {
+        console.error('加载好友请求失败:', error);
+        if (error.response) {
+          console.error('错误响应:', error.response.data);
+          if (error.response.status === 403) {
+            ElMessage.error('权限不足，请重新登录');
+            router.push('/login');
+          } else {
+            ElMessage.error(`加载失败: ${error.response.data.message || '未知错误'}`);
+          }
+        } else {
+          ElMessage.error('网络错误，请检查网络连接');
         }
-      });
-      console.log('返回的好友请求数据：', res.data);
-      pendingRequests.value = res.data;
-    }
+      }
+    };
 
     // 发送好友请求
     const sendFriendRequest = async () => {

@@ -95,7 +95,9 @@ public class WebSecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(
             "http://localhost:8080",
-            "https://my-health-keeper.vercel.app"
+            "https://my-health-keeper.vercel.app",
+            "https://f130-2001-da8-201d-1113-00-f435.ngrok-free.app",
+            "https://my-health-keeper-oennypf9x-xtc917s-projects.vercel.app"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "*"));

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://f130-2001-da8-201d-1113-00-f435.ngrok-free.app/api',
+  baseURL: 'https://aa3c-116-6-234-178.ngrok-free.app/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -45,6 +45,12 @@ api.interceptors.response.use(
     if (error.response) {
       console.error('Error response data:', error.response.data);
       console.error('Error response status:', error.response.status);
+      console.error('Error response headers:', error.response.headers);
+      
+      // 检查是否是HTML响应
+      if (typeof error.response.data === 'string' && error.response.data.includes('<!DOCTYPE html>')) {
+        console.error('Received HTML response instead of JSON. This might indicate a server error.');
+      }
       
       if (error.response.status === 401) {
         localStorage.removeItem('user');

@@ -4,6 +4,7 @@ const api = axios.create({
   baseURL: 'https://8df3-110-65-147-212.ngrok-free.app/api',
   headers: {
     'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true'  // 添加这个请求头来跳过ngrok的警告页面
   },
   timeout: 10000, // 10 秒超时
 });

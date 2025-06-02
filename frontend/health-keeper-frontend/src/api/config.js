@@ -6,7 +6,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
     'ngrok-skip-browser-warning': 'true'
   },
-  timeout: 10001, // 10 秒超时
+  timeout: 10000, // 10 秒超时
 });
 
 // 请求拦截器

@@ -57,7 +57,7 @@
     <!-- 动态列表 -->
     <div class="moments-list">
       <div v-if="moments.length === 0" class="empty-state">
-        <img src="https://via.placeholder.com/100" alt="empty" class="empty-icon">
+        <img src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" alt="empty" class="empty-icon">
         <p>还没有任何动态</p>
       </div>
       
@@ -190,23 +190,40 @@ export default {
     // 加载动态列表
     const loadMoments = async () => {
       try {
-
         const token = localStorage.getItem('token');
+        if (!token) {
+          ElMessage.error('请先登录');
+          router.push('/login');
+          return;
+        }
+
         const response = await axios.get('/api/moments/friends', {
           headers: {
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         });
-        console.log('动态数据:', response.data); // 添加日志
-        moments.value = response.data.map(moment => ({
-          ...moment,
-          likes: moment.likes || [],
-          comments: moment.comments || [],
-          courses: moment.courses || [],
-          showComments: false // 可选：防止 undefined
-        }))
+        
+        if (response.data && Array.isArray(response.data)) {
+          moments.value = response.data.map(moment => ({
+            ...moment,
+            likes: moment.likes || [],
+            comments: moment.comments || [],
+            courses: moment.courses || [],
+            showComments: false
+          }));
+        } else {
+          console.error('Invalid response format:', response.data);
+          ElMessage.error('数据格式错误');
+        }
       } catch (error) {
-        ElMessage.error('加载动态失败');
+        console.error('加载动态失败:', error);
+        if (error.response?.status === 401) {
+          ElMessage.error('登录已过期，请重新登录');
+          router.push('/login');
+        } else {
+          ElMessage.error('加载动态失败: ' + (error.response?.data?.message || '未知错误'));
+        }
       }
     };
     
@@ -286,48 +303,35 @@ export default {
 
 
     // 加载好友数据
-    /*const loadFriends = async () => {
-      const res = await axios.get('/api/friends', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      friends.value = res.data;
-    }*/
-
-    // 在加载好友数据前检查令牌有效性
     const loadFriends = async () => {
-      // 检查令牌是否存在且格式正确
       const token = localStorage.getItem('token');
       if (!token) {
-        ElMessage.error('未检测到登录令牌，请重新登录');
-        //router.push('/login');
-        return;
-      }
-
-      // 验证令牌格式（必须包含两个句点）
-      if (token.split('.').length !== 3) {
-        ElMessage.error('令牌格式错误，请重新登录');
-        localStorage.removeItem('token');
-        //router.push('/login');
+        ElMessage.error('请先登录');
+        router.push('/login');
         return;
       }
 
       try {
-        // 发送请求时携带令牌
         const res = await axios.get('/api/friends', {
           headers: {
-            Authorization: `Bearer ${token}`, // 确保正确拼接 "Bearer "
-            params: { _: new Date().getTime() } // 添加时间戳绕过缓存
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         });
-        friends.value = res.data;
+        
+        if (res.data && Array.isArray(res.data)) {
+          friends.value = res.data;
+        } else {
+          console.error('Invalid friends data format:', res.data);
+          ElMessage.error('好友数据格式错误');
+        }
       } catch (error) {
-        if (error.response && error.response.status === 403) {
-          ElMessage.error('权限不足，请检查令牌有效性');
+        console.error('加载好友列表失败:', error);
+        if (error.response?.status === 401) {
+          ElMessage.error('登录已过期，请重新登录');
           router.push('/login');
         } else {
-          ElMessage.error('加载好友列表失败');
+          ElMessage.error('加载好友列表失败: ' + (error.response?.data?.message || '未知错误'));
         }
       }
     };
@@ -335,14 +339,36 @@ export default {
     // 加载待处理请求
     const loadRequests = async () => {
       const token = localStorage.getItem('token');
-      const res = await axios.get('/api/friends/requests', {
-        headers: {
-          Authorization: `Bearer ${token}` // 添加头
+      if (!token) {
+        ElMessage.error('请先登录');
+        router.push('/login');
+        return;
+      }
+
+      try {
+        const res = await axios.get('/api/friends/requests', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (res.data && Array.isArray(res.data)) {
+          pendingRequests.value = res.data;
+        } else {
+          console.error('Invalid requests data format:', res.data);
+          ElMessage.error('请求数据格式错误');
         }
-      });
-      console.log('返回的好友请求数据：', res.data);
-      pendingRequests.value = res.data;
-    }
+      } catch (error) {
+        console.error('加载好友请求失败:', error);
+        if (error.response?.status === 401) {
+          ElMessage.error('登录已过期，请重新登录');
+          router.push('/login');
+        } else {
+          ElMessage.error('加载好友请求失败: ' + (error.response?.data?.message || '未知错误'));
+        }
+      }
+    };
 
     // 发送好友请求
     const sendFriendRequest = async () => {

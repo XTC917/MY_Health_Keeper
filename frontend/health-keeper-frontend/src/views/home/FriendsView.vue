@@ -57,7 +57,7 @@
     <!-- 动态列表 -->
     <div class="moments-list">
       <div v-if="moments.length === 0" class="empty-state">
-        <img src="https://via.placeholder.com/100" alt="empty" class="empty-icon">
+        <img :src="defaultAvatar" alt="empty" class="empty-icon">
         <p>还没有任何动态</p>
       </div>
       
@@ -186,27 +186,57 @@ export default {
     const friends = ref([])
     const currentUser = reactive(JSON.parse(localStorage.getItem('user')));
 
+    // 在组件挂载时加载数据
+    onMounted(async () => {
+      await loadMoments();
+      await loadFriends();
+      await loadPendingRequests();
+    });
 
     // 加载动态列表
     const loadMoments = async () => {
       try {
-
         const token = localStorage.getItem('token');
+        if (!token) {
+          ElMessage.warning('请先登录');
+          router.push('/login');
+          return;
+        }
+
         const response = await axios.get('/api/moments/friends', {
           headers: {
-            Authorization: `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
           }
         });
-        console.log('动态数据:', response.data); // 添加日志
-        moments.value = response.data.map(moment => ({
-          ...moment,
-          likes: moment.likes || [],
-          comments: moment.comments || [],
-          courses: moment.courses || [],
-          showComments: false // 可选：防止 undefined
-        }))
+
+        if (response.data && Array.isArray(response.data)) {
+          console.log('动态数据:', response.data);
+          moments.value = response.data.map(moment => ({
+            ...moment,
+            likes: moment.likes || [],
+            comments: moment.comments || [],
+            courses: moment.courses || [],
+            showComments: false
+          }));
+        } else {
+          console.error('返回的数据格式不正确:', response.data);
+          ElMessage.error('数据格式错误');
+        }
       } catch (error) {
-        ElMessage.error('加载动态失败');
+        console.error('加载动态失败:', error);
+        if (error.response) {
+          console.error('错误响应:', error.response.data);
+          if (error.response.status === 401) {
+            ElMessage.error('登录已过期，请重新登录');
+            router.push('/login');
+          } else {
+            ElMessage.error(`加载失败: ${error.response.data.message || '未知错误'}`);
+          }
+        } else {
+          ElMessage.error('网络错误，请检查网络连接');
+        }
       }
     };
     
@@ -280,89 +310,49 @@ export default {
       //router.push(`/home/moment/${moment.id}`)
     }
     
-    onMounted(() => {
-      loadMoments()
-    })
-
-
-    // 加载好友数据
-    /*const loadFriends = async () => {
-      const res = await axios.get('/api/friends', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      friends.value = res.data;
-    }*/
-
-    // 在加载好友数据前检查令牌有效性
+    // 加载好友列表
     const loadFriends = async () => {
-      // 检查令牌是否存在且格式正确
-      const token = localStorage.getItem('token');
-      if (!token) {
-        ElMessage.error('未检测到登录令牌，请重新登录');
-        router.push('/login');
-        return;
-      }
-
       try {
-        console.log('正在加载好友列表...');
-        const res = await axios.get('/api/friends', {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await axios.get('/api/friends', {
           headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
           }
         });
-        console.log('好友列表响应:', res.data);
-        friends.value = res.data;
+
+        if (response.data && Array.isArray(response.data)) {
+          friends.value = response.data;
+        }
       } catch (error) {
         console.error('加载好友列表失败:', error);
-        if (error.response) {
-          console.error('错误响应:', error.response.data);
-          if (error.response.status === 403) {
-            ElMessage.error('权限不足，请重新登录');
-            router.push('/login');
-          } else {
-            ElMessage.error(`加载失败: ${error.response.data.message || '未知错误'}`);
-          }
-        } else {
-          ElMessage.error('网络错误，请检查网络连接');
-        }
+        ElMessage.error('加载好友列表失败');
       }
     };
 
-    // 加载待处理请求
-    const loadRequests = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        ElMessage.error('未检测到登录令牌，请重新登录');
-        router.push('/login');
-        return;
-      }
-
+    // 加载待处理的好友请求
+    const loadPendingRequests = async () => {
       try {
-        console.log('正在加载好友请求...');
-        const res = await axios.get('/api/friends/requests', {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await axios.get('/api/friends/requests', {
           headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
           }
         });
-        console.log('好友请求响应:', res.data);
-        pendingRequests.value = res.data;
+
+        if (response.data && Array.isArray(response.data)) {
+          pendingRequests.value = response.data;
+        }
       } catch (error) {
         console.error('加载好友请求失败:', error);
-        if (error.response) {
-          console.error('错误响应:', error.response.data);
-          if (error.response.status === 403) {
-            ElMessage.error('权限不足，请重新登录');
-            router.push('/login');
-          } else {
-            ElMessage.error(`加载失败: ${error.response.data.message || '未知错误'}`);
-          }
-        } else {
-          ElMessage.error('网络错误，请检查网络连接');
-        }
+        ElMessage.error('加载好友请求失败');
       }
     };
 
@@ -405,7 +395,7 @@ export default {
               }
             }
         );
-        await loadRequests();
+        await loadPendingRequests();
         await loadFriends();
         ElMessage.success(action === 'accept' ? '好友添加成功' : '请求已拒绝');
       }catch (error) {
@@ -472,13 +462,6 @@ export default {
       }).catch(() => {});
     };
 
-    // 在onMounted中加载数据
-    onMounted(async () => {
-      await loadMoments()
-      await loadFriends()
-      await loadRequests()
-    })
-    
     return {
       moments,
       defaultAvatar,

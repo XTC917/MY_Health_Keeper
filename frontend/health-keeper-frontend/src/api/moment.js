@@ -1,52 +1,54 @@
+import axios from 'axios';
 import api from './config';
+const API_URL = api.baseURL + '/moments';
 
 class MomentService {
   getAllMoments() {
-    return api.get('/moments');
+    return axios.get(API_URL);
   }
 
   getMomentById(id) {
-    return api.get(`/moments/${id}`);
+    return axios.get(`${API_URL}/${id}`);
   }
 
   createMoment(momentData) {
-    return api.post('/moments', momentData);
+    return axios.post(API_URL, momentData);
   }
 
   updateMoment(id, momentData) {
-    return api.put(`/moments/${id}`, momentData);
+    return axios.put(`${API_URL}/${id}`, momentData);
   }
 
   deleteMoment(id) {
-    return api.delete(`/moments/${id}`);
+    return axios.delete(`${API_URL}/${id}`);
   }
 
   likeMoment(id) {
-    return api.post(`/moments/${id}/like`);
+    return axios.post(`${API_URL}/${id}/like`);
   }
 
   unlikeMoment(id) {
-    return api.delete(`/moments/${id}/like`);
+    return axios.delete(`${API_URL}/${id}/like`);
   }
 
   getMyMoments() {
-    return api.get('/moments/my');
+    return axios.get(`${API_URL}/my`);
   }
 
   getComments(momentId) {
-    return api.get(`/moments/${momentId}/comments`);
+    return axios.get(`${API_URL}/${momentId}/comments`);
   }
 
   addComment(momentId, commentData) {
-    return api.post(`/moments/${momentId}/comments`, commentData);
+    return axios.post(`${API_URL}/${momentId}/comments`, commentData);
   }
 
   updateComment(momentId, commentId, commentData) {
-    return api.put(`/moments/${momentId}/comments/${commentId}`, commentData);
+    return axios.put(`${API_URL}/${momentId}/comments/${commentId}`, commentData);
   }
 
   deleteComment(momentId, commentId) {
-    return api.delete(`/moments/${momentId}/comments/${commentId}`);
+    return axios.delete(`${API_URL}/${momentId}/comments/${commentId}`);
   }
 }
 

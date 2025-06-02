@@ -57,7 +57,7 @@
     <!-- 动态列表 -->
     <div class="moments-list">
       <div v-if="moments.length === 0" class="empty-state">
-        <img src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" alt="empty" class="empty-icon">
+        <img src="https://via.placeholder.com/100" alt="empty" class="empty-icon">
         <p>还没有任何动态</p>
       </div>
       
@@ -164,8 +164,7 @@ import { useRouter } from 'vue-router'
 import { Plus, Star, StarFilled, ChatDotRound, Picture } from '@element-plus/icons-vue'
 import CommentList from '@/components/CommentList.vue'
 import { ElMessage, ElMessageBox } from 'element-plus';
-import api from '@/api/config';
-import momentService from '@/api/moment';
+import axios from 'axios';
 
 export default {
   name: 'FriendsView',
@@ -191,35 +190,23 @@ export default {
     // 加载动态列表
     const loadMoments = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          ElMessage.error('请先登录');
-          router.push('/login');
-          return;
-        }
 
-        const response = await api.get('/moments/friends');
-        
-        if (response.data && Array.isArray(response.data)) {
-          moments.value = response.data.map(moment => ({
-            ...moment,
-            likes: moment.likes || [],
-            comments: moment.comments || [],
-            courses: moment.courses || [],
-            showComments: false
-          }));
-        } else {
-          console.error('Invalid response format:', response.data);
-          ElMessage.error('数据格式错误');
-        }
+        const token = localStorage.getItem('token');
+        const response = await axios.get('/api/moments/friends', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        console.log('动态数据:', response.data); // 添加日志
+        moments.value = response.data.map(moment => ({
+          ...moment,
+          likes: moment.likes || [],
+          comments: moment.comments || [],
+          courses: moment.courses || [],
+          showComments: false // 可选：防止 undefined
+        }))
       } catch (error) {
-        console.error('加载动态失败:', error);
-        if (error.response?.status === 401) {
-          ElMessage.error('登录已过期，请重新登录');
-          router.push('/login');
-        } else {
-          ElMessage.error('加载动态失败: ' + (error.response?.data?.message || '未知错误'));
-        }
+        ElMessage.error('加载动态失败');
       }
     };
     
@@ -254,18 +241,33 @@ export default {
       console.log("点击了点赞按钮，moment ID:", moment.id);
 
       const user = JSON.parse(localStorage.getItem('user') || '{}')
+      const token = localStorage.getItem('token');
       const isUserLiked = moment.likes?.some(like => like.id === user.id);
+      console.log("正在点赞，moment ID:", moment.id); // ✅调试
 
       try {
         if (isUserLiked) {
-          await api.delete(`/moments/${moment.id}/like`);
+          // 取消点赞
+          await axios.delete(`/api/moments/${moment.id}/like`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
         } else {
-          await api.post(`/moments/${moment.id}/like`);
+          // 点赞
+          await axios.post(`/api/moments/${moment.id}/like`, {}, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
         }
-        await loadMoments();
+
+        await loadMoments(); // 重新加载动态
       } catch (error) {
         ElMessage.error('操作失败: ' + (error.response?.data?.message || '未知错误'));
       }
+
+      //localStorage.setItem('moments', JSON.stringify(moments))
     }
     
     // 显示/隐藏评论
@@ -284,30 +286,48 @@ export default {
 
 
     // 加载好友数据
+    /*const loadFriends = async () => {
+      const res = await axios.get('/api/friends', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      friends.value = res.data;
+    }*/
+
+    // 在加载好友数据前检查令牌有效性
     const loadFriends = async () => {
+      // 检查令牌是否存在且格式正确
       const token = localStorage.getItem('token');
       if (!token) {
-        ElMessage.error('请先登录');
-        router.push('/login');
+        ElMessage.error('未检测到登录令牌，请重新登录');
+        //router.push('/login');
+        return;
+      }
+
+      // 验证令牌格式（必须包含两个句点）
+      if (token.split('.').length !== 3) {
+        ElMessage.error('令牌格式错误，请重新登录');
+        localStorage.removeItem('token');
+        //router.push('/login');
         return;
       }
 
       try {
-        const friendsResponse = await api.get('/friends');
-        
-        if (friendsResponse.data && Array.isArray(friendsResponse.data)) {
-          friends.value = friendsResponse.data;
-        } else {
-          console.error('Invalid friends data format:', friendsResponse.data);
-          ElMessage.error('好友数据格式错误');
-        }
+        // 发送请求时携带令牌
+        const res = await axios.get('/api/friends', {
+          headers: {
+            Authorization: `Bearer ${token}`, // 确保正确拼接 "Bearer "
+            params: { _: new Date().getTime() } // 添加时间戳绕过缓存
+          }
+        });
+        friends.value = res.data;
       } catch (error) {
-        console.error('加载好友列表失败:', error);
-        if (error.response?.status === 401) {
-          ElMessage.error('登录已过期，请重新登录');
+        if (error.response && error.response.status === 403) {
+          ElMessage.error('权限不足，请检查令牌有效性');
           router.push('/login');
         } else {
-          ElMessage.error('加载好友列表失败: ' + (error.response?.data?.message || '未知错误'));
+          ElMessage.error('加载好友列表失败');
         }
       }
     };
@@ -315,40 +335,30 @@ export default {
     // 加载待处理请求
     const loadRequests = async () => {
       const token = localStorage.getItem('token');
-      if (!token) {
-        ElMessage.error('请先登录');
-        router.push('/login');
-        return;
-      }
-
-      try {
-        const requestsResponse = await api.get('/friends/requests');
-        
-        if (requestsResponse.data && Array.isArray(requestsResponse.data)) {
-          pendingRequests.value = requestsResponse.data;
-        } else {
-          console.error('Invalid requests data format:', requestsResponse.data);
-          ElMessage.error('请求数据格式错误');
+      const res = await axios.get('/api/friends/requests', {
+        headers: {
+          Authorization: `Bearer ${token}` // 添加头
         }
-      } catch (error) {
-        console.error('加载好友请求失败:', error);
-        if (error.response?.status === 401) {
-          ElMessage.error('登录已过期，请重新登录');
-          router.push('/login');
-        } else {
-          ElMessage.error('加载好友请求失败: ' + (error.response?.data?.message || '未知错误'));
-        }
-      }
-    };
+      });
+      console.log('返回的好友请求数据：', res.data);
+      pendingRequests.value = res.data;
+    }
 
     // 发送好友请求
     const sendFriendRequest = async () => {
       const token = localStorage.getItem('token');
       try {
-        await api.post('/friends/requests', { username: friendUsername.value });
+        await axios.post('/api/friends/requests',
+            { username: friendUsername.value },
+            {
+              headers: {
+                Authorization: `Bearer ${token}` // 添加头
+              }
+            }
+        );
         ElMessage.success('请求已发送');
         friendUsername.value = '';
-      } catch (error) {
+      }catch (error) {
         if (error.response?.status === 404) {
           ElMessage.error('用户不存在');
         } else if (error.response?.status === 400) {
@@ -357,22 +367,32 @@ export default {
           ElMessage.error('发送请求失败');
         }
       }
+
     }
 
     // 处理请求
     const handleRequest = async (req, action) => {
       const token = localStorage.getItem('token');
       try {
-        await api.put(`/friends/requests/${req.id}`, { action: action.toUpperCase() });
+        await axios.put(
+            `/api/friends/requests/${req.id}`,
+            { action: action.toUpperCase() },
+            {
+              headers: {
+                Authorization: `Bearer ${token}` // 添加头
+              }
+            }
+        );
         await loadRequests();
         await loadFriends();
         ElMessage.success(action === 'accept' ? '好友添加成功' : '请求已拒绝');
-      } catch (error) {
+      }catch (error) {
         ElMessage.error('操作失败，请重试');
       }
+
     }
 
-    // 在setup()中添加方法
+// 在setup()中添加方法
     const confirmDeleteFriend = async (username) => {
       try {
         await ElMessageBox.confirm(
@@ -396,7 +416,14 @@ export default {
     // 修改removeFriend方法，接受参数
     const removeFriend = async (username) => {
       try {
-        await api.delete(`/friends/${encodeURIComponent(username)}`);
+        await axios.delete(
+            `/api/friends/${encodeURIComponent(username)}`,
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`
+              }
+            }
+        );
         ElMessage.success('删除成功');
         await loadFriends(); // 重新加载好友列表
       } catch (error) {
@@ -412,7 +439,9 @@ export default {
         type: 'warning'
       }).then(async () => {
         try {
-          await api.delete(`/moments/${momentId}`);
+          await axios.delete(`/api/moments/${momentId}`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          });
           ElMessage.success('删除成功');
           await loadMoments(); // 重新加载动态列表
         } catch (error) {

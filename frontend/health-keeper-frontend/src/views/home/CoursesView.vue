@@ -54,58 +54,70 @@ const loading = ref(false)
 
 // 加载课程列表
 const loadCourses = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    console.log('Loading all courses...')
-    const response = await CourseService.getAllCourses()
-    console.log('Courses response:', response)
-    courses.value = response.data || []
-    console.log('Loaded courses:', courses.value)
+    console.log('Loading all courses...');
+    const response = await CourseService.getAllCourses();
+    console.log('Courses response:', response);
+    
+    if (response.data && Array.isArray(response.data)) {
+      courses.value = response.data;
+      console.log('Loaded courses:', courses.value);
+    } else {
+      console.error('Invalid courses data format:', response.data);
+      ElMessage.error('课程数据格式错误');
+      courses.value = [];
+    }
   } catch (error) {
-    console.error('Error loading courses:', error)
-    ElMessage.error('加载课程失败，请重试')
+    console.error('Error loading courses:', error);
+    ElMessage.error(error.response?.data?.message || '加载课程失败，请重试');
+    courses.value = [];
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 // 加入课程
 const enrollCourse = async (courseId) => {
+  if (!courseId) {
+    ElMessage.error('课程ID无效');
+    return;
+  }
+
   // 检查是否登录
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
   if (!user.token) {
-    ElMessage.warning('请先登录')
-    router.push('/login')
-    return
+    ElMessage.warning('请先登录');
+    router.push('/login');
+    return;
   }
 
   try {
-    // 向后端发送加入/退出请求（后端已实现切换逻辑）
-    const response = await CourseService.enrollCourse(courseId)
-
-    const { enrolled, totalStudents } = response.data
+    // 向后端发送加入/退出请求
+    const response = await CourseService.enrollCourse(courseId);
+    const { enrolled, totalStudents } = response.data;
 
     // 提示用户当前操作结果
     if (enrolled) {
-      ElMessage.success('成功加入课程')
+      ElMessage.success('成功加入课程');
     } else {
-      ElMessage.success('成功退出课程')
+      ElMessage.success('成功退出课程');
     }
 
-    // 更新课程状态（包含按钮状态）
+    // 更新课程状态
     courses.value = courses.value.map(course => {
       if (course.id === courseId) {
         return {
           ...course,
           isEnrolled: enrolled,
-          totalStudents: totalStudents // 也可以同步更新人数
-        }
+          totalStudents: totalStudents
+        };
       }
-      return course
-    })
+      return course;
+    });
   } catch (error) {
-    console.error('Error toggling enrollment:', error)
-    ElMessage.error(error.response?.data?.message || '操作失败，请稍后重试')
+    console.error('Error toggling enrollment:', error);
+    ElMessage.error(error.response?.data?.message || '操作失败，请稍后重试');
   }
 }
 

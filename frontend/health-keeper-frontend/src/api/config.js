@@ -29,6 +29,20 @@ api.interceptors.request.use(
 // 响应拦截器
 api.interceptors.response.use(
   (response) => {
+    // 检查是否是 HTML 响应
+    if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
+      console.error('Received HTML response instead of JSON. This might indicate a server error.');
+      return Promise.reject({
+        response: {
+          data: {
+            message: '服务器返回了错误的响应格式',
+            success: false
+          },
+          status: 500
+        }
+      });
+    }
+
     if (response.data && response.data.success === false) {
       return Promise.reject({
         response: {
@@ -50,6 +64,15 @@ api.interceptors.response.use(
       // 检查是否是HTML响应
       if (typeof error.response.data === 'string' && error.response.data.includes('<!DOCTYPE html>')) {
         console.error('Received HTML response instead of JSON. This might indicate a server error.');
+        return Promise.reject({
+          response: {
+            data: {
+              message: '服务器返回了错误的响应格式',
+              success: false
+            },
+            status: 500
+          }
+        });
       }
       
       if (error.response.status === 401) {

@@ -14,8 +14,10 @@ public class CorsConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         
-        // 允许所有来源
-        config.addAllowedOrigin("*");
+        // 明确指定允许的源
+        config.addAllowedOrigin("https://my-health-keeper.vercel.app");
+        config.addAllowedOrigin("http://localhost:8080");  // 本地开发环境
+        config.addAllowedOrigin("http://localhost:8081");  // 本地开发环境
         // 允许所有请求头
         config.addAllowedHeader("*");
         // 允许所有方法

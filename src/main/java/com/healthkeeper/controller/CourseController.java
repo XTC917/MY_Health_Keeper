@@ -90,18 +90,25 @@ public class CourseController {
                 
                 // 处理创建者信息
                 if (course.getCreatorId() != null) {
-                    //Map<String, Object> creatorMap = new HashMap<>();
-                    User user=userRepository.findById(course.getCreatorId()).orElseThrow(() -> new RuntimeException("User not found"));
-                    courseMap.put("author", user.getUsername());
-                    //creatorMap.put("id", course.getCreatorId());
-//                    creatorMap.put("username", course.getCreator.getUsername());
-//                    courseMap.put("creator", creatorMap);
+                    User user = userRepository.findById(course.getCreatorId()).orElse(null);
+                    if (user != null) {
+                        courseMap.put("author", user.getUsername());
+                    }
                 }
+                
+                // 如果用户已认证，检查是否已加入课程
                 if (authentication != null) {
-                    UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-                    User user = userRepository.findById(userDetails.getId())
-                            .orElseThrow(() -> new RuntimeException("User not found"));
-                    courseMap.put("isEnrolled", user.getEnrolledCourses().contains(course));
+                    try {
+                        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+                        User user = userRepository.findById(userDetails.getId()).orElse(null);
+                        if (user != null) {
+                            courseMap.put("isEnrolled", user.getEnrolledCourses().contains(course));
+                        } else {
+                            courseMap.put("isEnrolled", false);
+                        }
+                    } catch (Exception e) {
+                        courseMap.put("isEnrolled", false);
+                    }
                 } else {
                     courseMap.put("isEnrolled", false);
                 }

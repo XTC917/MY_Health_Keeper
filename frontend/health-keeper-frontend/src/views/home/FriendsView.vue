@@ -164,7 +164,8 @@ import { useRouter } from 'vue-router'
 import { Plus, Star, StarFilled, ChatDotRound, Picture } from '@element-plus/icons-vue'
 import CommentList from '@/components/CommentList.vue'
 import { ElMessage, ElMessageBox } from 'element-plus';
-import axios from 'axios';
+import api from '@/api/config';
+import momentService from '@/api/moment';
 
 export default {
   name: 'FriendsView',
@@ -197,12 +198,7 @@ export default {
           return;
         }
 
-        const response = await axios.get('/api/moments/friends', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const response = await api.get('/moments/friends');
         
         if (response.data && Array.isArray(response.data)) {
           moments.value = response.data.map(moment => ({
@@ -258,33 +254,18 @@ export default {
       console.log("点击了点赞按钮，moment ID:", moment.id);
 
       const user = JSON.parse(localStorage.getItem('user') || '{}')
-      const token = localStorage.getItem('token');
       const isUserLiked = moment.likes?.some(like => like.id === user.id);
-      console.log("正在点赞，moment ID:", moment.id); // ✅调试
 
       try {
         if (isUserLiked) {
-          // 取消点赞
-          await axios.delete(`/api/moments/${moment.id}/like`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
+          await api.delete(`/moments/${moment.id}/like`);
         } else {
-          // 点赞
-          await axios.post(`/api/moments/${moment.id}/like`, {}, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
+          await api.post(`/moments/${moment.id}/like`);
         }
-
-        await loadMoments(); // 重新加载动态
+        await loadMoments();
       } catch (error) {
         ElMessage.error('操作失败: ' + (error.response?.data?.message || '未知错误'));
       }
-
-      //localStorage.setItem('moments', JSON.stringify(moments))
     }
     
     // 显示/隐藏评论
@@ -312,17 +293,12 @@ export default {
       }
 
       try {
-        const res = await axios.get('/api/friends', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const friendsResponse = await api.get('/friends');
         
-        if (res.data && Array.isArray(res.data)) {
-          friends.value = res.data;
+        if (friendsResponse.data && Array.isArray(friendsResponse.data)) {
+          friends.value = friendsResponse.data;
         } else {
-          console.error('Invalid friends data format:', res.data);
+          console.error('Invalid friends data format:', friendsResponse.data);
           ElMessage.error('好友数据格式错误');
         }
       } catch (error) {
@@ -346,17 +322,12 @@ export default {
       }
 
       try {
-        const res = await axios.get('/api/friends/requests', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const requestsResponse = await api.get('/friends/requests');
         
-        if (res.data && Array.isArray(res.data)) {
-          pendingRequests.value = res.data;
+        if (requestsResponse.data && Array.isArray(requestsResponse.data)) {
+          pendingRequests.value = requestsResponse.data;
         } else {
-          console.error('Invalid requests data format:', res.data);
+          console.error('Invalid requests data format:', requestsResponse.data);
           ElMessage.error('请求数据格式错误');
         }
       } catch (error) {
@@ -374,17 +345,10 @@ export default {
     const sendFriendRequest = async () => {
       const token = localStorage.getItem('token');
       try {
-        await axios.post('/api/friends/requests',
-            { username: friendUsername.value },
-            {
-              headers: {
-                Authorization: `Bearer ${token}` // 添加头
-              }
-            }
-        );
+        await api.post('/friends/requests', { username: friendUsername.value });
         ElMessage.success('请求已发送');
         friendUsername.value = '';
-      }catch (error) {
+      } catch (error) {
         if (error.response?.status === 404) {
           ElMessage.error('用户不存在');
         } else if (error.response?.status === 400) {
@@ -393,32 +357,22 @@ export default {
           ElMessage.error('发送请求失败');
         }
       }
-
     }
 
     // 处理请求
     const handleRequest = async (req, action) => {
       const token = localStorage.getItem('token');
       try {
-        await axios.put(
-            `/api/friends/requests/${req.id}`,
-            { action: action.toUpperCase() },
-            {
-              headers: {
-                Authorization: `Bearer ${token}` // 添加头
-              }
-            }
-        );
+        await api.put(`/friends/requests/${req.id}`, { action: action.toUpperCase() });
         await loadRequests();
         await loadFriends();
         ElMessage.success(action === 'accept' ? '好友添加成功' : '请求已拒绝');
-      }catch (error) {
+      } catch (error) {
         ElMessage.error('操作失败，请重试');
       }
-
     }
 
-// 在setup()中添加方法
+    // 在setup()中添加方法
     const confirmDeleteFriend = async (username) => {
       try {
         await ElMessageBox.confirm(
@@ -442,14 +396,7 @@ export default {
     // 修改removeFriend方法，接受参数
     const removeFriend = async (username) => {
       try {
-        await axios.delete(
-            `/api/friends/${encodeURIComponent(username)}`,
-            {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-              }
-            }
-        );
+        await api.delete(`/friends/${encodeURIComponent(username)}`);
         ElMessage.success('删除成功');
         await loadFriends(); // 重新加载好友列表
       } catch (error) {
@@ -465,9 +412,7 @@ export default {
         type: 'warning'
       }).then(async () => {
         try {
-          await axios.delete(`/api/moments/${momentId}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-          });
+          await api.delete(`/moments/${momentId}`);
           ElMessage.success('删除成功');
           await loadMoments(); // 重新加载动态列表
         } catch (error) {

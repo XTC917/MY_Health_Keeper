@@ -133,6 +133,13 @@ const goToCourseDetail = (courseId) => {
 
 // 跳转到上传课程页面
 const goToUpload = () => {
+  // 检查是否登录
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  if (!user.token) {
+    ElMessage.warning('请先登录');
+    router.push('/login');
+    return;
+  }
   router.push('/home/upload-course')
 }
 

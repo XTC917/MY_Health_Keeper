@@ -11,7 +11,7 @@ const api = axios.create({
 // 请求拦截器
 api.interceptors.request.use(
   (config) => {
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (user && user.token) {
       config.headers.Authorization = `Bearer ${user.token}`;
       console.log('请求添加认证头:', `Bearer ${user.token.substring(0, 15)}...`);
@@ -78,6 +78,7 @@ api.interceptors.response.use(
       
       if (error.response.status === 401) {
         localStorage.removeItem('user');
+        localStorage.removeItem('token');
         window.location.href = '/login';
       }
       

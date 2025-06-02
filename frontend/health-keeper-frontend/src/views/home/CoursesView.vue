@@ -65,12 +65,13 @@ const loadCourses = async () => {
       console.log('Loaded courses:', courses.value);
     } else {
       console.error('Invalid courses data format:', response.data);
-      ElMessage.error('课程数据格式错误');
+      ElMessage.error('课程数据格式错误，请稍后重试');
       courses.value = [];
     }
   } catch (error) {
     console.error('Error loading courses:', error);
-    ElMessage.error(error.response?.data?.message || '加载课程失败，请重试');
+    const errorMessage = error.response?.data?.message || '加载课程失败，请检查网络连接或稍后重试';
+    ElMessage.error(errorMessage);
     courses.value = [];
   } finally {
     loading.value = false;
@@ -93,6 +94,7 @@ const enrollCourse = async (courseId) => {
   }
 
   try {
+    loading.value = true;
     // 向后端发送加入/退出请求
     const response = await CourseService.enrollCourse(courseId);
     const { enrolled, totalStudents } = response.data;
@@ -117,7 +119,10 @@ const enrollCourse = async (courseId) => {
     });
   } catch (error) {
     console.error('Error toggling enrollment:', error);
-    ElMessage.error(error.response?.data?.message || '操作失败，请稍后重试');
+    const errorMessage = error.response?.data?.message || '操作失败，请稍后重试';
+    ElMessage.error(errorMessage);
+  } finally {
+    loading.value = false;
   }
 }
 

@@ -5,6 +5,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10 秒超时
 });
 
 // 请求拦截器
@@ -35,7 +36,7 @@ api.interceptors.response.use(
       return Promise.reject({
         response: {
           data: {
-            message: '服务器返回了错误的响应格式',
+            message: '服务器返回了错误的响应格式，请检查后端服务是否正常运行',
             success: false
           },
           status: 500
@@ -67,7 +68,7 @@ api.interceptors.response.use(
         return Promise.reject({
           response: {
             data: {
-              message: '服务器返回了错误的响应格式',
+              message: '服务器返回了错误的响应格式，请检查后端服务是否正常运行',
               success: false
             },
             status: 500
@@ -92,6 +93,19 @@ api.interceptors.response.use(
           }
         });
       }
+    }
+    
+    // 如果是网络错误或超时
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      return Promise.reject({
+        response: {
+          data: {
+            message: '请求超时，请检查网络连接',
+            success: false
+          },
+          status: 408
+        }
+      });
     }
     
     // 如果没有具体的错误信息，返回一个通用错误

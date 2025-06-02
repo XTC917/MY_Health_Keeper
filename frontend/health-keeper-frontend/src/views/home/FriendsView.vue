@@ -164,7 +164,8 @@ import { useRouter } from 'vue-router'
 import { Plus, Star, StarFilled, ChatDotRound, Picture } from '@element-plus/icons-vue'
 import CommentList from '@/components/CommentList.vue'
 import { ElMessage, ElMessageBox } from 'element-plus';
-import axios from 'axios';
+import FriendService from '@/api/friend';
+import MomentService from '@/api/moment';
 
 export default {
   name: 'FriendsView',
@@ -196,21 +197,7 @@ export default {
     // 加载动态列表
     const loadMoments = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          ElMessage.warning('请先登录');
-          router.push('/login');
-          return;
-        }
-
-        const response = await axios.get('/api/moments/friends', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        });
-
+        const response = await MomentService.getFriendsMoments();
         if (response.data && Array.isArray(response.data)) {
           console.log('动态数据:', response.data);
           moments.value = response.data.map(moment => ({
@@ -268,37 +255,18 @@ export default {
     
     // 点赞/取消点赞
     const toggleLike = async (moment) => {
-      console.log("点击了点赞按钮，moment ID:", moment.id);
-
-      const user = JSON.parse(localStorage.getItem('user') || '{}')
-      const token = localStorage.getItem('token');
-      const isUserLiked = moment.likes?.some(like => like.id === user.id);
-      console.log("正在点赞，moment ID:", moment.id); // ✅调试
-
       try {
+        const isUserLiked = moment.likes?.some(like => like.id === currentUser.id);
         if (isUserLiked) {
-          // 取消点赞
-          await axios.delete(`/api/moments/${moment.id}/like`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
+          await MomentService.unlikeMoment(moment.id);
         } else {
-          // 点赞
-          await axios.post(`/api/moments/${moment.id}/like`, {}, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
+          await MomentService.likeMoment(moment.id);
         }
-
         await loadMoments(); // 重新加载动态
       } catch (error) {
         ElMessage.error('操作失败: ' + (error.response?.data?.message || '未知错误'));
       }
-
-      //localStorage.setItem('moments', JSON.stringify(moments))
-    }
+    };
     
     // 显示/隐藏评论
     const showComments = (moment) => {
@@ -313,17 +281,7 @@ export default {
     // 加载好友列表
     const loadFriends = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-
-        const response = await axios.get('/api/friends', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        });
-
+        const response = await FriendService.getFriends();
         if (response.data && Array.isArray(response.data)) {
           friends.value = response.data;
         }
@@ -336,17 +294,7 @@ export default {
     // 加载待处理的好友请求
     const loadPendingRequests = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-
-        const response = await axios.get('/api/friends/requests', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        });
-
+        const response = await FriendService.getPendingRequests();
         if (response.data && Array.isArray(response.data)) {
           pendingRequests.value = response.data;
         }
@@ -358,19 +306,11 @@ export default {
 
     // 发送好友请求
     const sendFriendRequest = async () => {
-      const token = localStorage.getItem('token');
       try {
-        await axios.post('/api/friends/requests',
-            { username: friendUsername.value },
-            {
-              headers: {
-                Authorization: `Bearer ${token}` // 添加头
-              }
-            }
-        );
+        await FriendService.sendFriendRequest(friendUsername.value);
         ElMessage.success('请求已发送');
         friendUsername.value = '';
-      }catch (error) {
+      } catch (error) {
         if (error.response?.status === 404) {
           ElMessage.error('用户不存在');
         } else if (error.response?.status === 400) {
@@ -379,71 +319,52 @@ export default {
           ElMessage.error('发送请求失败');
         }
       }
+    };
 
-    }
-
-    // 处理请求
+    // 处理好友请求
     const handleRequest = async (req, action) => {
-      const token = localStorage.getItem('token');
       try {
-        await axios.put(
-            `/api/friends/requests/${req.id}`,
-            { action: action.toUpperCase() },
-            {
-              headers: {
-                Authorization: `Bearer ${token}` // 添加头
-              }
-            }
-        );
+        await FriendService.handleFriendRequest(req.id, action);
         await loadPendingRequests();
         await loadFriends();
         ElMessage.success(action === 'accept' ? '好友添加成功' : '请求已拒绝');
-      }catch (error) {
-        ElMessage.error('操作失败，请重试');
-      }
-
-    }
-
-// 在setup()中添加方法
-    const confirmDeleteFriend = async (username) => {
-      try {
-        await ElMessageBox.confirm(
-            `确定要删除好友 ${username} 吗？此操作不可恢复！`,
-            '删除确认',
-            {
-              confirmButtonText: '确定',
-              cancelButtonText: '取消',
-              type: 'warning',
-            }
-        );
-
-        // 用户确认后执行删除
-        await removeFriend(username);
       } catch (error) {
-        // 用户取消操作
-        ElMessage.info('已取消删除');
+        ElMessage.error('操作失败，请重试');
       }
     };
 
-    // 修改removeFriend方法，接受参数
+    // 删除好友
     const removeFriend = async (username) => {
       try {
-        await axios.delete(
-            `/api/friends/${encodeURIComponent(username)}`,
-            {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-              }
-            }
-        );
+        await FriendService.deleteFriend(username);
         ElMessage.success('删除成功');
-        await loadFriends(); // 重新加载好友列表
+        await loadFriends();
       } catch (error) {
         ElMessage.error(error.response?.data || '删除失败');
       }
     };
 
-    // 删除动态方法
+    // 确认删除好友
+    const confirmDeleteFriend = async (username) => {
+      try {
+        await ElMessageBox.confirm(
+          `确定要删除好友 ${username} 吗？此操作不可恢复！`,
+          '删除确认',
+          {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning',
+          }
+        );
+        await removeFriend(username);
+      } catch (error) {
+        if (error !== 'cancel') {
+          ElMessage.error('删除失败');
+        }
+      }
+    };
+
+    // 删除动态
     const confirmDeleteMoment = (momentId) => {
       ElMessageBox.confirm('确定删除此动态吗？', '警告', {
         confirmButtonText: '确定',
@@ -451,9 +372,7 @@ export default {
         type: 'warning'
       }).then(async () => {
         try {
-          await axios.delete(`/api/moments/${momentId}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-          });
+          await MomentService.deleteMoment(momentId);
           ElMessage.success('删除成功');
           await loadMoments(); // 重新加载动态列表
         } catch (error) {

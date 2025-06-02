@@ -117,6 +117,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, Heart } from '@element-plus/icons-vue'
+import MomentService from '@/api/moment'
 
 const route = useRoute()
 const router = useRouter()
@@ -124,18 +125,26 @@ const moment = ref(null)
 const newComment = ref('')
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 
-const loadMoment = () => {
-  const moments = JSON.parse(localStorage.getItem('moments') || '[]')
-  moment.value = moments.find(m => m.id === route.params.id)
-  if (!moment.value) {
-    ElMessage.error('动态不存在')
-    router.push('/home/friends')
+const loadMoment = async () => {
+  try {
+    const response = await MomentService.getMomentById(route.params.id);
+    if (response.data) {
+      moment.value = response.data;
+    } else {
+      ElMessage.error('动态不存在');
+      router.push('/home/friends');
+    }
+  } catch (error) {
+    console.error('加载动态失败:', error);
+    ElMessage.error('加载动态失败');
+    router.push('/home/friends');
   }
 }
 
 const formatTime = (time) => {
-  const date = new Date(time)
-  return date.toLocaleString()
+  if (!time) return '时间未知';
+  const date = new Date(time);
+  return isNaN(date.getTime()) ? '时间未知' : date.toLocaleString();
 }
 
 const goBack = () => {
@@ -144,53 +153,37 @@ const goBack = () => {
 
 const isLiked = computed(() => {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
-  return moment.value?.likes.some(like => like.userId === user.id)
+  return moment.value?.likes?.some(like => String(like.id) === String(user.id))
 })
 
-const toggleLike = () => {
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
-  const moments = JSON.parse(localStorage.getItem('moments') || '[]')
-  const momentIndex = moments.findIndex(m => m.id === moment.value.id)
-  
-  if (momentIndex !== -1) {
-    const likeIndex = moments[momentIndex].likes.findIndex(like => like.userId === user.id)
-    
-    if (likeIndex === -1) {
-      moments[momentIndex].likes.push({
-        id: Date.now().toString(),
-        userId: user.id,
-        username: user.username || '匿名用户'
-      })
+const toggleLike = async () => {
+  try {
+    if (isLiked.value) {
+      await MomentService.unlikeMoment(moment.value.id);
     } else {
-      moments[momentIndex].likes.splice(likeIndex, 1)
+      await MomentService.likeMoment(moment.value.id);
     }
-    
-    localStorage.setItem('moments', JSON.stringify(moments))
-    moment.value = moments[momentIndex]
+    await loadMoment(); // 重新加载动态
+  } catch (error) {
+    ElMessage.error('操作失败: ' + (error.response?.data?.message || '未知错误'));
   }
 }
 
-const submitComment = () => {
-  if (!newComment.value.trim()) return
+const submitComment = async () => {
+  if (!newComment.value.trim()) return;
   
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
-  const moments = JSON.parse(localStorage.getItem('moments') || '[]')
-  const momentIndex = moments.findIndex(m => m.id === moment.value.id)
-  
-  if (momentIndex !== -1) {
-    const comment = {
-      id: Date.now().toString(),
-      userId: user.id,
-      username: user.username || '匿名用户',
-      content: newComment.value,
-      createTime: new Date().toISOString()
-    }
+  try {
+    const commentData = {
+      content: newComment.value.trim()
+    };
     
-    moments[momentIndex].comments.push(comment)
-    localStorage.setItem('moments', JSON.stringify(moments))
-    moment.value = moments[momentIndex]
-    newComment.value = ''
-    ElMessage.success('评论成功')
+    await MomentService.addComment(moment.value.id, commentData);
+    await loadMoment(); // 重新加载动态
+    newComment.value = '';
+    ElMessage.success('评论成功');
+  } catch (error) {
+    console.error('评论提交失败:', error);
+    ElMessage.error('评论发表失败，请稍后再试');
   }
 }
 

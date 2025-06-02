@@ -1,54 +1,64 @@
-import axios from 'axios';
 import api from './config';
-const API_URL = api.baseURL + '/moments';
 
 class MomentService {
-  getAllMoments() {
-    return axios.get(API_URL);
+  // 获取好友动态列表
+  getFriendsMoments() {
+    return api.get('/moments/friends');
   }
 
+  // 获取动态详情
   getMomentById(id) {
-    return axios.get(`${API_URL}/${id}`);
+    return api.get(`/moments/${id}`);
   }
 
+  // 创建动态
   createMoment(momentData) {
-    return axios.post(API_URL, momentData);
+    return api.post('/moments', momentData);
   }
 
+  // 更新动态
   updateMoment(id, momentData) {
-    return axios.put(`${API_URL}/${id}`, momentData);
+    return api.put(`/moments/${id}`, momentData);
   }
 
+  // 删除动态
   deleteMoment(id) {
-    return axios.delete(`${API_URL}/${id}`);
+    return api.delete(`/moments/${id}`);
   }
 
+  // 点赞动态
   likeMoment(id) {
-    return axios.post(`${API_URL}/${id}/like`);
+    return api.post(`/moments/${id}/like`);
   }
 
+  // 取消点赞
   unlikeMoment(id) {
-    return axios.delete(`${API_URL}/${id}/like`);
+    return api.delete(`/moments/${id}/like`);
   }
 
+  // 获取我的动态
   getMyMoments() {
-    return axios.get(`${API_URL}/my`);
+    return api.get('/moments/my');
   }
 
+  // 获取评论列表
   getComments(momentId) {
-    return axios.get(`${API_URL}/${momentId}/comments`);
+    return api.get(`/moments/${momentId}/comments`);
   }
 
+  // 添加评论
   addComment(momentId, commentData) {
-    return axios.post(`${API_URL}/${momentId}/comments`, commentData);
+    return api.post(`/moments/${momentId}/comments`, commentData);
   }
 
+  // 更新评论
   updateComment(momentId, commentId, commentData) {
-    return axios.put(`${API_URL}/${momentId}/comments/${commentId}`, commentData);
+    return api.put(`/moments/${momentId}/comments/${commentId}`, commentData);
   }
 
+  // 删除评论
   deleteComment(momentId, commentId) {
-    return axios.delete(`${API_URL}/${momentId}/comments/${commentId}`);
+    return api.delete(`/moments/${momentId}/comments/${commentId}`);
   }
 }
 

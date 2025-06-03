@@ -1,9 +1,10 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL:   'https://dumoaoivxujbxeanvjsw.supabase.co/api' || 'http://localhost:8081/api',  // 使用环境变量，如果没有则默认使用localhost
+  baseURL: 'https://cc04-2001-da8-201d-1112-4634-61a8-d2b2-3ca4.ngrok-free.app/api',  // 修改为本地后端地址
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true'  // 添加 ngrok 跳过警告的请求头
   },
   timeout: 300000, // 5分钟超时，适用于大文件上传
 });

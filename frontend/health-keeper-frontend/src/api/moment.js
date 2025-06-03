@@ -13,7 +13,34 @@ class MomentService {
 
   // 创建动态
   createMoment(momentData) {
-    return api.post('/moments', momentData);
+    // 如果是FormData对象，直接使用
+    if (momentData instanceof FormData) {
+      return api.post('/api/moments', momentData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+    }
+    
+    // 如果不是FormData，创建FormData对象
+    const formData = new FormData();
+    formData.append('content', momentData.content);
+    
+    if (momentData.files) {
+      momentData.files.forEach(file => {
+        formData.append('files', file);
+      });
+    }
+    
+    if (momentData.courseId) {
+      formData.append('courseId', momentData.courseId);
+    }
+    
+    return api.post('/api/moments', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
   }
 
   // 更新动态

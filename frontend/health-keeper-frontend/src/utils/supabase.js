@@ -11,7 +11,7 @@ export const uploadFile = async (file, bucket = 'public') => {
     const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
     const filePath = `${fileName}`
 
-    const { /* _data */ _, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from(bucket)
       .upload(filePath, file)
       

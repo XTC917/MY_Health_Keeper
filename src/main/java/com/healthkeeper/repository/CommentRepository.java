@@ -9,6 +9,5 @@ import java.util.List;
 
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, Long> {
-    List<Comment> findByMomentAndParentIsNullOrderByCreatedAtDesc(Moment moment);
-    List<Comment> findByParentOrderByCreatedAtAsc(Comment parent);
+    List<Comment> findByMomentOrderByCreatedAtDesc(Moment moment);
 } 

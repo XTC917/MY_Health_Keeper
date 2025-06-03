@@ -3,7 +3,6 @@ package com.healthkeeper.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @Entity
@@ -20,16 +19,6 @@ public class Comment {
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id")
-    private Comment parent;  // 父评论
-
-    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
-    private List<Comment> replies;  // 回复列表
-
-    @Column(name = "reply_to_user_id")
-    private Long replyToUserId;  // 被回复的用户ID
 
     @Column(columnDefinition = "TEXT")
     private String content;

@@ -72,22 +72,22 @@ class MomentService {
 
   // 获取评论列表
   getComments(momentId) {
-    return api.get(`/moments/${momentId}/comments`);
+    return api.get(`/moments/comments/${momentId}`);
   }
 
   // 添加评论
   addComment(momentId, commentData) {
-    return api.post(`/moments/${momentId}/comments`, commentData);
+    return api.post(`/moments/comments/${momentId}`, commentData);
   }
 
   // 更新评论
   updateComment(momentId, commentId, commentData) {
-    return api.put(`/moments/${momentId}/comments/${commentId}`, commentData);
+    return api.put(`/moments/comments/${commentId}`, commentData);
   }
 
   // 删除评论
   deleteComment(momentId, commentId) {
-    return api.delete(`/moments/${momentId}/comments/${commentId}`);
+    return api.delete(`/moments/comments/${commentId}`);
   }
 }
 

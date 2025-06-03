@@ -4,6 +4,7 @@ import com.healthkeeper.entity.Comment;
 import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 public class CommentResponseDTO {
@@ -13,8 +14,10 @@ public class CommentResponseDTO {
     private String username;
     private String content;
     private LocalDateTime createdAt;
-
-    private List<CommentResponseDTO> replies; // 如果你有嵌套回复功能
+    private Long parentId;
+    private Long replyToUserId;
+    private String replyToUsername;
+    private List<CommentResponseDTO> replies;
 
     public static CommentResponseDTO fromEntity(Comment comment) {
         CommentResponseDTO dto = new CommentResponseDTO();
@@ -24,13 +27,21 @@ public class CommentResponseDTO {
         dto.setUsername(comment.getUser().getUsername());
         dto.setContent(comment.getContent());
         dto.setCreatedAt(comment.getCreatedAt());
+        
+        if (comment.getParent() != null) {
+            dto.setParentId(comment.getParent().getId());
+        }
+        
+        if (comment.getReplyToUserId() != null) {
+            dto.setReplyToUserId(comment.getReplyToUserId());
+            // 这里需要设置被回复用户的用户名，可以在service层处理
+        }
 
-        // 若有子评论，递归转换（假设你有 getReplies() 方法）
-        /*if (comment.getReplies() != null && !comment.getReplies().isEmpty()) {
+        if (comment.getReplies() != null && !comment.getReplies().isEmpty()) {
             dto.setReplies(comment.getReplies().stream()
                     .map(CommentResponseDTO::fromEntity)
                     .collect(Collectors.toList()));
-        }*/
+        }
 
         return dto;
     }

@@ -1,7 +1,6 @@
 package com.healthkeeper.controller;
 
 import com.healthkeeper.dto.CommentDTO;
-import com.healthkeeper.dto.CommentResponse;
 import com.healthkeeper.dto.CommentResponseDTO;
 import com.healthkeeper.entity.Comment;
 import com.healthkeeper.entity.Moment;
@@ -32,28 +31,29 @@ public class CommentController {
     @Autowired
     UserRepository userRepository;
 
-
     @GetMapping("/{momentId}")
     public ResponseEntity<?> getCommentsByMoment(@PathVariable Long momentId) {
         Moment moment = momentRepository.findById(momentId)
                 .orElseThrow(() -> new RuntimeException("Moment not found"));
 
-        List<Comment> comments = commentRepository.findByMomentOrderByCreatedAtDesc(moment);
+        // 只获取顶级评论（没有父评论的评论）
+        List<Comment> comments = commentRepository.findByMomentAndParentIsNullOrderByCreatedAtDesc(moment);
 
         List<CommentResponseDTO> response = comments.stream().map(comment -> {
-            CommentResponseDTO dto = new CommentResponseDTO();
-            dto.setId(comment.getId());
-            dto.setMomentId(comment.getMoment().getId());
-            dto.setUserId(comment.getUser().getId());
-            dto.setUsername(comment.getUser().getUsername()); // 需要 user 实体中有 username
-            dto.setContent(comment.getContent());
-            dto.setCreatedAt(comment.getCreatedAt());
+            CommentResponseDTO dto = CommentResponseDTO.fromEntity(comment);
+            // 设置被回复用户的用户名
+            if (comment.getReplyToUserId() != null) {
+                User replyToUser = userRepository.findById(comment.getReplyToUserId())
+                        .orElse(null);
+                if (replyToUser != null) {
+                    dto.setReplyToUsername(replyToUser.getUsername());
+                }
+            }
             return dto;
         }).collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
     }
-
 
     @PostMapping("/{momentId}")
     @PreAuthorize("hasRole('USER')")
@@ -74,9 +74,32 @@ public class CommentController {
             comment.setMoment(moment);
             comment.setContent(dto.getContent());
 
-            Comment savedComment = commentRepository.save(comment);
+            // 处理回复
+            if (dto.getParentId() != null) {
+                Comment parentComment = commentRepository.findById(dto.getParentId())
+                        .orElseThrow(() -> new RuntimeException("Parent comment not found"));
+                comment.setParent(parentComment);
+                
+                // 设置被回复的用户ID
+                if (dto.getReplyToUserId() != null) {
+                    comment.setReplyToUserId(dto.getReplyToUserId());
+                } else {
+                    // 如果没有指定被回复用户，则默认回复父评论的作者
+                    comment.setReplyToUserId(parentComment.getUser().getId());
+                }
+            }
 
+            Comment savedComment = commentRepository.save(comment);
             CommentResponseDTO responseDTO = CommentResponseDTO.fromEntity(savedComment);
+
+            // 设置被回复用户的用户名
+            if (savedComment.getReplyToUserId() != null) {
+                User replyToUser = userRepository.findById(savedComment.getReplyToUserId())
+                        .orElse(null);
+                if (replyToUser != null) {
+                    responseDTO.setReplyToUsername(replyToUser.getUsername());
+                }
+            }
 
             return ResponseEntity.ok(responseDTO);
         } catch (Exception e) {

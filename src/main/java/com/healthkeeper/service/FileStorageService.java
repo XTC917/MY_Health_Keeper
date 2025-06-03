@@ -1,5 +1,6 @@
 package com.healthkeeper.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
@@ -10,8 +11,11 @@ import java.util.UUID;
 
 @Service
 public class FileStorageService {
-    // 文件存储根目录（示例路径，可根据需求修改）
-    private final Path rootLocation = Paths.get("uploads");
+    @Value("${file.upload-dir}")
+    private String uploadDir;
+
+    @Value("${server.port}")
+    private String serverPort;
 
     public FileStorageService() {
         init();
@@ -20,6 +24,7 @@ public class FileStorageService {
     // 初始化存储目录
     public void init() {
         try {
+            Path rootLocation = Paths.get(uploadDir);
             if (!Files.exists(rootLocation)) {
                 Files.createDirectories(rootLocation);
             }
@@ -32,8 +37,11 @@ public class FileStorageService {
     public String saveFile(MultipartFile file) {
         try {
             String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
-            Files.copy(file.getInputStream(), rootLocation.resolve(filename));
-            return "/uploads/" + filename; // 返回相对路径或完整URL
+            Path filePath = Paths.get(uploadDir).resolve(filename);
+            Files.copy(file.getInputStream(), filePath);
+            
+            // 返回完整的URL
+            return String.format("http://localhost:%s/api/files/%s", serverPort, filename);
         } catch (Exception e) {
             throw new RuntimeException("文件存储失败: " + e.getMessage());
         }

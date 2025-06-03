@@ -56,8 +56,15 @@ public class FileUploadController {
                 return ResponseEntity.notFound().build();
             }
 
+            // 设置正确的Content-Type
+            String contentType = Files.probeContentType(filePath);
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
             return ResponseEntity.ok()
-                    .header("Content-Type", Files.probeContentType(filePath))
+                    .header("Content-Type", contentType)
+                    .header("Content-Disposition", "inline; filename=\"" + filename + "\"")
                     .body(Files.readAllBytes(filePath));
         } catch (IOException e) {
             return ResponseEntity.badRequest().body("文件读取失败: " + e.getMessage());

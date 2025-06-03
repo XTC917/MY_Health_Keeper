@@ -1,10 +1,9 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://cc04-2001-da8-201d-1112-4634-61a8-d2b2-3ca4.ngrok-free.app/api',
+  baseURL: 'http://localhost:8081/api',  // 修改为本地后端地址
   headers: {
-    'Content-Type': 'application/json',
-    'ngrok-skip-browser-warning': 'true'
+    'Content-Type': 'application/json'
   },
   timeout: 300000, // 5分钟超时，适用于大文件上传
 });
@@ -15,11 +14,7 @@ api.interceptors.request.use(
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (user && user.token) {
       config.headers.Authorization = `Bearer ${user.token}`;
-      console.log('请求添加认证头:', `Bearer ${user.token.substring(0, 15)}...`);
-    } else {
-      console.warn('未找到用户Token，请求将不包含认证信息');
     }
-    config.headers['ngrok-skip-browser-warning'] = 'true';
     
     // 如果是文件上传请求，设置更长的超时时间
     if (config.data instanceof FormData) {
@@ -27,7 +22,6 @@ api.interceptors.request.use(
       config.headers['Content-Type'] = 'multipart/form-data';
     }
     
-    console.log(`发送${config.method.toUpperCase()}请求到: ${config.baseURL}${config.url}`, config.data || config.params);
     return config;
   },
   (error) => {

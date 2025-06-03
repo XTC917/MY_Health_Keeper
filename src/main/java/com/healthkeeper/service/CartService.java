@@ -29,7 +29,7 @@ public class CartService {
     @Autowired
     private CartItemRepository cartItemRepository;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public CartDTO getCart(String username) {
         log.info("Getting cart for user: {}", username);
         try {
@@ -190,35 +190,26 @@ public class CartService {
     }
 
     private CartDTO convertToDTO(Cart cart) {
-        try {
-            CartDTO dto = new CartDTO();
-            dto.setId(cart.getId());
-            
-            BigDecimal totalAmount = BigDecimal.ZERO;
-            
-            dto.setItems(cart.getItems().stream()
-                    .map(item -> {
-                        CartDTO.CartItemDTO itemDTO = new CartDTO.CartItemDTO();
-                        itemDTO.setId(item.getId());
-                        itemDTO.setProductId(item.getProduct().getId());
-                        itemDTO.setProductName(item.getProduct().getName());
-                        itemDTO.setProductImage(item.getProduct().getImageUrl());
-                        itemDTO.setPrice(item.getPrice());
-                        itemDTO.setQuantity(item.getQuantity());
-                        itemDTO.setSubtotal(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
-                        return itemDTO;
-                    })
-                    .toList());
-            
-            totalAmount = cart.getItems().stream()
-                    .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            
-            dto.setTotalAmount(totalAmount);
-            return dto;
-        } catch (Exception e) {
-            log.error("Error converting cart to DTO - Cart ID: {}", cart.getId(), e);
-            throw e;
+        CartDTO dto = new CartDTO();
+        dto.setId(cart.getId());
+        
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        if (cart.getItems() != null) {
+            for (CartItem item : cart.getItems()) {
+                CartDTO.CartItemDTO itemDTO = new CartDTO.CartItemDTO();
+                itemDTO.setId(item.getId());
+                itemDTO.setProductId(item.getProduct().getId());
+                itemDTO.setProductName(item.getProduct().getName());
+                itemDTO.setProductImage(item.getProduct().getImageUrl());
+                itemDTO.setPrice(item.getPrice());
+                itemDTO.setQuantity(item.getQuantity());
+                itemDTO.setSubtotal(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+                dto.getItems().add(itemDTO);
+                totalAmount = totalAmount.add(itemDTO.getSubtotal());
+            }
         }
+        dto.setTotalAmount(totalAmount);
+        
+        return dto;
     }
 } 

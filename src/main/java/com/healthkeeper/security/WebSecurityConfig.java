@@ -97,7 +97,7 @@ public class WebSecurityConfig {
             "http://localhost:8080",
             "http://localhost:8081",
             "https://my-health-keeper.vercel.app",
-            "https://d9a2-116-6-234-178.ngrok-free.app"
+            "https://cc04-2001-da8-201d-1112-4634-61a8-d2b2-3ca4.ngrok-free.app"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList(

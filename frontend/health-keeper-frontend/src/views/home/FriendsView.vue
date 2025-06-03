@@ -81,8 +81,7 @@
         </div>
         
         <!-- 动态内容 -->
-        <!--div class="moment-content" @click="goToDetail(moment)"-->
-        <div class="moment-content">
+        <div class="moment-content" @click="goToDetail(moment)">
           <p>{{ moment.content }}</p>
         </div>
         
@@ -274,8 +273,8 @@ export default {
     }
     
     // 跳转到详情页
-    const goToDetail = (/*moment*/) => {
-      //router.push(`/home/moment/${moment.id}`)
+    const goToDetail = (moment) => {
+      router.push(`/home/moment/${moment.id}`)
     }
     
     // 加载好友列表

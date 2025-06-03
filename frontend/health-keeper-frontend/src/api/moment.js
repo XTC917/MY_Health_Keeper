@@ -15,7 +15,7 @@ class MomentService {
   createMoment(momentData) {
     // 如果是FormData对象，直接使用
     if (momentData instanceof FormData) {
-      return api.post('/api/moments', momentData, {
+      return api.post('/moments', momentData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -26,17 +26,19 @@ class MomentService {
     const formData = new FormData();
     formData.append('content', momentData.content);
     
-    if (momentData.files) {
+    // 只有在有文件时才添加文件
+    if (momentData.files && momentData.files.length > 0) {
       momentData.files.forEach(file => {
         formData.append('files', file);
       });
     }
     
+    // 只有在有课程ID时才添加
     if (momentData.courseId) {
       formData.append('courseId', momentData.courseId);
     }
     
-    return api.post('/api/moments', formData, {
+    return api.post('/moments', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }

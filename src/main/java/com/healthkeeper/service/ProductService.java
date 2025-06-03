@@ -119,8 +119,8 @@ public class ProductService {
                 System.out.println("Product marked as inactive due to existing orders");
             } else {
                 // 如果商品没有被订单引用，则直接删除
-                productRepository.delete(product);
-                System.out.println("Product deleted successfully");
+            productRepository.delete(product);
+            System.out.println("Product deleted successfully");
             }
         } catch (Exception e) {
             System.err.println("Error in deleteProduct service: " + e.getMessage());

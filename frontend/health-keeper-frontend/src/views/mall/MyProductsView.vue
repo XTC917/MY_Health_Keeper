@@ -225,7 +225,7 @@ import { productApi } from '@/api/product';
 import { orderApi } from '@/api/order';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useRouter } from 'vue-router';
-import { uploadFile, deleteFile } from '@/utils/supabase';
+import { uploadFile } from '@/utils/supabase';
 
 export default {
   name: 'MyProductsView',

@@ -1,4 +1,5 @@
 import api from './config';
+import axios from 'axios';
 
 class AuthService {
   login(username, password) {
@@ -28,13 +29,14 @@ class AuthService {
     localStorage.removeItem('token');// 登出时同时清除 user 和 token
   }
 
-  register(username, email, password, phone) {
-    console.log('Sending register request with data:', { username, email, phone });
+  register(username, email, password, phone, avatar) {
+    console.log('Sending register request with data:', { username, email, phone, avatar });
     return api.post('/auth/register', {
       username,
       email,
       password,
-      phone
+      phone,
+      avatar
     }).then(response => {
       console.log('Full register response:', response);
       console.log('Response status:', response.status);
@@ -65,6 +67,21 @@ class AuthService {
   isAuthenticated() {
     const user = this.getCurrentUser();
     return !!user && !!user.token;
+  }
+
+  static async register(username, email, password, phone, avatar) {
+    try {
+      const response = await axios.post(API_URL + 'auth/register', {
+        username,
+        email,
+        password,
+        phone,
+        avatar
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 }
 

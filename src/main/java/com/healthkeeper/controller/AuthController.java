@@ -110,10 +110,11 @@ public class AuthController {
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest signUpRequest) {
         try {
             logger.info("=== 开始处理注册请求 ===");
-            logger.info("注册请求数据: username={}, email={}, phone={}", 
+            logger.info("注册请求数据: username={}, email={}, phone={}, avatar={}", 
                 signUpRequest.getUsername(), 
                 signUpRequest.getEmail(),
-                signUpRequest.getPhone());
+                signUpRequest.getPhone(),
+                signUpRequest.getAvatar());
             
             // 检查数据库连接
             try {
@@ -149,6 +150,7 @@ public class AuthController {
             user.setEmail(signUpRequest.getEmail());
             user.setPassword(encoder.encode(signUpRequest.getPassword()));
             user.setPhone(signUpRequest.getPhone());
+            user.setAvatar(signUpRequest.getAvatar() != null ? signUpRequest.getAvatar() : "http://localhost:8081/api/files/default-avatar.png");
             
             // 设置创建时间
             LocalDateTime now = LocalDateTime.now();

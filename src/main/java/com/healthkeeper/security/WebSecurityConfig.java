@@ -105,7 +105,7 @@ public class WebSecurityConfig {
             "https://my-health-keeper.vercel.app",
             "https://cc04-2001-da8-201d-1112-4634-61a8-d2b2-3ca4.ngrok-free.app"
         ));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList(
             "Authorization", 
             "Content-Type", 

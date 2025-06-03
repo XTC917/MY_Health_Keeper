@@ -71,6 +71,11 @@ const routes = [
         component: () => import('../views/home/MyCoursesView.vue')
       },
       {
+        path: 'profile-edit',
+        name: 'ProfileEdit',
+        component: () => import('../views/home/ProfileEdit.vue')  // 你需要创建这个组件
+      },
+      {
         path: 'upload-course',
         name: 'UploadCourse',
         component: () => import('../views/home/UploadCourseView.vue')

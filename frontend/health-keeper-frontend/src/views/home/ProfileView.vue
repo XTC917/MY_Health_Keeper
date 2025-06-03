@@ -7,6 +7,10 @@
     
     <div class="menu-list" v-if="isLoggedIn">
       <el-card class="menu-card">
+        <div class="menu-item" @click="goToProfileEdit">
+          <el-icon><User /></el-icon>
+          <span>修改个人信息</span>
+        </div>
         <div class="menu-item" @click="goToMyCourses">
           <el-icon><VideoCamera /></el-icon>
           <span>我创建的课程</span>
@@ -38,20 +42,23 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { 
+import {
+  User,
   VideoCamera, 
   Goods, 
   List, 
   DataLine 
 } from '@element-plus/icons-vue'
 import AuthService from '../../api/auth'
+import UserService from "@/api/user";
 
 export default {
   name: 'ProfileView',
   components: {
+    User,
     VideoCamera,
     Goods,
     List,
@@ -60,16 +67,20 @@ export default {
   setup() {
     const router = useRouter()
     const user = ref(AuthService.getCurrentUser() || {})
-    
+
     // 计算属性
     const isLoggedIn = computed(() => {
       const currentUser = AuthService.getCurrentUser()
       return !!(currentUser && currentUser.token)
     })
-    
+
     const userAvatar = computed(() => {
       return user.value.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
     })
+
+    const goToProfileEdit = () => {
+      router.push('/home/profile-edit')  // 👈 假设这是你定义的路由
+    }
     
     // 路由跳转方法
     const goToMyCourses = () => {
@@ -98,11 +109,30 @@ export default {
       ElMessage.success('退出登录成功')
       router.push('/login')
     }
+
+    onMounted(async () => {
+      try {
+        const res = await UserService.getProfile()
+        if (res.data) {
+          Object.assign(user.value, res.data) // 将获取的用户信息填入 user.value
+          // 更新 localStorage 保持一致
+          localStorage.setItem('user', JSON.stringify(user.value))
+          console.log('User profile loaded:', user.value)
+        }
+      } catch (error) {
+        ElMessage.error('获取用户信息失败')
+        if (error.response?.status === 403) {
+          ElMessage.error('登录已过期，请重新登录')
+          router.push('/login')
+        }
+      }
+    })
     
     return {
       user,
       isLoggedIn,
       userAvatar,
+      goToProfileEdit,
       goToMyCourses,
       goToMyProducts,
       goToOrders,

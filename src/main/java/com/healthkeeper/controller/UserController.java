@@ -206,4 +206,41 @@ public class UserController {
 
         return ResponseEntity.ok(statistics);
     }
+
+    @PatchMapping("/profile")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> updateUserProfile(@RequestBody Map<String, Object> updates, Authentication authentication) {
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        User user = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 更新请求中提供的字段
+        if (updates.containsKey("username")) {
+            user.setUsername((String) updates.get("username"));
+        }
+        if (updates.containsKey("email")) {
+            user.setEmail((String) updates.get("email"));
+        }
+        if (updates.containsKey("phone")) {
+            user.setPhone((String) updates.get("phone"));
+        }
+        if (updates.containsKey("address")) {
+            user.setAddress((String) updates.get("address"));
+        }
+        if (updates.containsKey("avatar")) {
+            user.setAvatar((String) updates.get("avatar"));
+        }
+        if (updates.containsKey("gender")) {
+            user.setGender((String) updates.get("gender"));
+        }
+        if (updates.containsKey("password") && updates.get("password") != null && !((String) updates.get("password")).isEmpty()) {
+            user.setPassword(encoder.encode((String) updates.get("password")));
+        }
+
+        User savedUser = userRepository.save(user);
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", savedUser);
+        return ResponseEntity.ok(response);
+    }
 } 

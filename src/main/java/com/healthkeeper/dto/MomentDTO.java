@@ -21,6 +21,7 @@ public class MomentDTO {
     private Integer likesCount;
     private List<UserSummary> likes;
     private Integer commentCount;
+    private List<CommentDTO> comments;
 
     // 构造函数从实体转为DTO
     public MomentDTO(Moment moment) {
@@ -36,6 +37,9 @@ public class MomentDTO {
                 .map(UserSummary::new)
                 .collect(Collectors.toList());
         this.commentCount = moment.getComments().size();
+        this.comments = moment.getComments().stream()
+                .map(comment -> new CommentDTO(comment))
+                .collect(Collectors.toList());
     }
 
     @Data
@@ -46,6 +50,21 @@ public class MomentDTO {
         public UserSummary(User user) {
             this.id = user.getId();
             this.username = user.getUsername();
+        }
+    }
+
+    @Data
+    public static class CommentDTO {
+        private Long id;
+        private String content;
+        private String username;
+        private LocalDateTime createdAt;
+
+        public CommentDTO(Comment comment) {
+            this.id = comment.getId();
+            this.content = comment.getContent();
+            this.username = comment.getUser().getUsername();
+            this.createdAt = comment.getCreatedAt();
         }
     }
 }

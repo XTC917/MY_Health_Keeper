@@ -84,7 +84,7 @@ public class MomentController {
     public ResponseEntity<?> getMomentById(@PathVariable Long id) {
         Moment moment = momentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Moment not found"));
-        return ResponseEntity.ok(moment);
+        return ResponseEntity.ok(new MomentDTO(moment));
     }
 
     /*@PostMapping("/")

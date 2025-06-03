@@ -74,7 +74,7 @@
 
       <!-- 评论区 -->
       <div class="comments-section">
-        <h3>评论 {{ moment.comments.length }}</h3>
+        <h3>评论 {{ moment.commentCount || 0 }}</h3>
         <div class="comment-input">
           <el-input
             v-model="newComment"
@@ -88,7 +88,7 @@
         </div>
         
         <div class="comments-list">
-          <div v-if="moment.comments.length === 0" class="no-comments">
+          <div v-if="!moment.comments || moment.comments.length === 0" class="no-comments">
             暂无评论，快来抢沙发吧！
           </div>
           <div
@@ -101,7 +101,7 @@
             <div class="comment-content">
               <div class="comment-header">
                 <span class="comment-username">{{ comment.username }}</span>
-                <span class="comment-time">{{ formatTime(comment.createTime) }}</span>
+                <span class="comment-time">{{ formatTime(comment.createdAt) }}</span>
               </div>
               <p class="comment-text">{{ comment.content }}</p>
             </div>
@@ -128,8 +128,15 @@ const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726
 const loadMoment = async () => {
   try {
     const response = await MomentService.getMomentById(route.params.id);
+    console.log('动态详情数据:', response.data);
     if (response.data) {
-      moment.value = response.data;
+      moment.value = {
+        ...response.data,
+        likes: response.data.likes || [],
+        comments: response.data.comments || [],
+        courses: response.data.courses || []
+      };
+      console.log('处理后的动态数据:', moment.value);
     } else {
       ElMessage.error('动态不存在');
       router.push('/home/friends');

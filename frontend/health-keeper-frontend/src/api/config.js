@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8081/api',  // 修改为本地后端地址
+  baseURL:  'https://cc04-2001-da8-201d-1112-4634-61a8-d2b2-3ca4.ngrok-free.app/api' || 'https://dumoaoivxujbxeanvjsw.supabase.co' || 'http://localhost:8081/api',  // 使用环境变量，如果没有则默认使用localhost
   headers: {
     'Content-Type': 'application/json'
   },

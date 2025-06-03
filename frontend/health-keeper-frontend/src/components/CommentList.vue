@@ -82,7 +82,7 @@
 <script>
 import { ref } from 'vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
-import axios from "axios";
+import MomentService from '@/api/moment'
 
 export default {
   name: 'CommentList',
@@ -101,24 +101,22 @@ export default {
     const replyToComment = ref(null)
     const currentUser = JSON.parse(localStorage.getItem('user')) || {}
 
-
     // 获取评论列表
     const loadComments = async () => {
       try {
-        const res = await axios.get(`/api/moments/comments/${props.momentId}`,{
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      })
-        comments.value = res.data
-      } catch (e) {
-        ElMessage.error('加载评论失败')
+        const response = await MomentService.getComments(props.momentId);
+        comments.value = response.data;
+      } catch (error) {
+        console.error('加载评论失败:', error);
+        ElMessage.error('加载评论失败');
       }
     }
 
-
     // 格式化时间
     const formatTime = (time) => {
-      const date = new Date(time)
-      return date.toLocaleString()
+      if (!time) return '时间未知';
+      const date = new Date(time);
+      return isNaN(date.getTime()) ? '时间未知' : date.toLocaleString();
     }
     
     // 显示回复输入框
@@ -143,24 +141,22 @@ export default {
       }
 
       try {
-        const mes = await axios.post(`/api/moments/comments/${props.momentId}`, {
-          content: commentContent.value,
+        const commentData = {
+          content: commentContent.value.trim(),
           parentId: null,
           momentId: props.momentId
-        }, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        })
-        console.log('发布评论：', mes);
-
-        commentContent.value = ''
-        await loadComments()
-        emit('update-comments')
-        ElMessage.success('评论成功')
-      } catch (e) {
-        ElMessage.error('评论失败')
+        };
+        
+        await MomentService.addComment(props.momentId, commentData);
+        commentContent.value = '';
+        await loadComments();
+        emit('update-comments');
+        ElMessage.success('评论成功');
+      } catch (error) {
+        console.error('评论失败:', error);
+        ElMessage.error('评论失败: ' + (error.response?.data?.message || '未知错误'));
       }
     }
-
 
     // 提交回复
     const submitReply = async () => {
@@ -170,22 +166,21 @@ export default {
       }
 
       try {
-        await axios.post(`/api/moments/comments/${props.momentId}`, {
-          content: replyContent.value,
+        const replyData = {
+          content: replyContent.value.trim(),
           parentId: replyToComment.value.id
-        }, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        })
-
-        await loadComments()
-        emit('update-comments')
-        cancelReply()
-        ElMessage.success('回复成功')
-      } catch (e) {
-        ElMessage.error('回复失败')
+        };
+        
+        await MomentService.addComment(props.momentId, replyData);
+        await loadComments();
+        emit('update-comments');
+        cancelReply();
+        ElMessage.success('回复成功');
+      } catch (error) {
+        console.error('回复失败:', error);
+        ElMessage.error('回复失败: ' + (error.response?.data?.message || '未知错误'));
       }
     }
-
 
     const confirmDeleteComment = (commentId) => {
       ElMessageBox.confirm('确定删除此评论吗？', '警告', {
@@ -194,14 +189,13 @@ export default {
         type: 'warning'
       }).then(async () => {
         try {
-          console.log('Deleting comment ID:', commentId);
-          await axios.delete(`/api/moments/comments/${commentId}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-          });
+          await MomentService.deleteComment(props.momentId, commentId);
           ElMessage.success('删除成功');
-          emit('update-comments'); // 触发父组件更新评论列表
+          await loadComments();
+          emit('update-comments');
         } catch (error) {
-          ElMessage.error('删除失败');
+          console.error('删除失败:', error);
+          ElMessage.error('删除失败: ' + (error.response?.data?.message || '未知错误'));
         }
       }).catch(() => {});
     };

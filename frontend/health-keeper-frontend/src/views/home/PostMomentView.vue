@@ -118,7 +118,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, Plus, Delete } from '@element-plus/icons-vue'
-import axios from "axios";
+import MomentService from '@/api/moment'
 
 const router = useRouter()
 const content = ref('')
@@ -193,30 +193,23 @@ const publishMoment = async () => {
   const formData = new FormData();
   formData.append("content", content.value);
 
-  // 添加文件（字段名需与后端一致）
+  // 添加文件
   fileList.value.forEach((file) => {
-    formData.append("files", file.raw); // 注意：使用 file.raw（原始文件对象）
+    formData.append("files", file.raw);
   });
 
-  // 添加课程ID（以 JSON 字符串形式传递）
+  // 添加课程ID
   if (selectedCourseIds.value.length > 0) {
     formData.append("courseIds", JSON.stringify(selectedCourseIds.value));
   }
 
   try {
-    // 发送 POST 请求
-    const response = await axios.post("/api/moments", formData, {
-      headers: {
-        //"Content-Type": "multipart/form-data", // 必须设置 multipart/form-data
-        Authorization: `Bearer ${localStorage.getItem("token")}`, // 携带 Token
-      },
-    });
-    console.log('发布响应：', response);
+    await MomentService.createMoment(formData);
     ElMessage.success('发布成功');
     router.push('/home/friends');
   } catch (error) {
-    // 处理错误
-    ElMessage.error('发布失败: ' + (error.response?.data || '未知错误'));
+    console.error('发布失败:', error);
+    ElMessage.error('发布失败: ' + (error.response?.data?.message || '未知错误'));
   }
 };
 

@@ -58,25 +58,31 @@ public class CommentController {
     @PostMapping("/{momentId}")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> createComment(
+            @PathVariable Long momentId,
             @RequestBody CommentDTO dto,
             Authentication authentication) {
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        User user = userRepository.findById(userDetails.getId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        try {
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            User user = userRepository.findById(userDetails.getId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Moment moment = momentRepository.findById(dto.getMomentId())
-                .orElseThrow(() -> new RuntimeException("Moment not found"));
+            Moment moment = momentRepository.findById(momentId)
+                    .orElseThrow(() -> new RuntimeException("Moment not found"));
 
-        Comment comment = new Comment();
-        comment.setUser(user);
-        comment.setMoment(moment);
-        comment.setContent(dto.getContent());
+            Comment comment = new Comment();
+            comment.setUser(user);
+            comment.setMoment(moment);
+            comment.setContent(dto.getContent());
 
-        Comment savedComment = commentRepository.save(comment);
+            Comment savedComment = commentRepository.save(comment);
 
-        CommentResponseDTO responseDTO = CommentResponseDTO.fromEntity(savedComment);
+            CommentResponseDTO responseDTO = CommentResponseDTO.fromEntity(savedComment);
 
-        return ResponseEntity.ok(responseDTO);
+            return ResponseEntity.ok(responseDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("评论创建失败: " + e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")

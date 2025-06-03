@@ -54,16 +54,30 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import UserService from '@/api/user'
 
 const router = useRouter()
 const userInfo = ref({})
 const myFavorites = ref([])
 const myCreatedCourses = ref([])
 
-onMounted(() => {
-  // 获取用户信息
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
-  userInfo.value = user
+onMounted(async () => {
+  try {
+    // 从后端获取最新的用户信息
+    const res = await UserService.getProfile()
+    if (res.data) {
+      userInfo.value = res.data
+      // 更新 localStorage 中的用户信息
+      localStorage.setItem('user', JSON.stringify(res.data))
+    }
+  } catch (error) {
+    ElMessage.error('获取用户信息失败')
+    if (error.response?.status === 403) {
+      ElMessage.error('登录已过期，请重新登录')
+      router.push('/login')
+      return
+    }
+  }
 
   // 获取收藏的课程
   const favorites = JSON.parse(localStorage.getItem('favorites') || '[]')

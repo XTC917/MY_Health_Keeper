@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL:   'https://dumoaoivxujbxeanvjsw.supabase.co' || 'http://localhost:8081/api',  // 使用环境变量，如果没有则默认使用localhost
+  baseURL:   'https://dumoaoivxujbxeanvjsw.supabase.co/api' || 'http://localhost:8081/api',  // 使用环境变量，如果没有则默认使用localhost
   headers: {
     'Content-Type': 'application/json'
   },

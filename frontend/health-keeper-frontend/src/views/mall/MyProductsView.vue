@@ -225,6 +225,7 @@ import { productApi } from '@/api/product';
 import { orderApi } from '@/api/order';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useRouter } from 'vue-router';
+import { uploadFile, deleteFile } from '@/utils/supabase';
 
 export default {
   name: 'MyProductsView',
@@ -309,7 +310,7 @@ export default {
     const deleteProduct = async (productId) => {
       try {
         await ElMessageBox.confirm(
-          '确定要删除这个商品吗？此操作不可恢复。',
+          '确定要删除这个商品吗？如果商品已被购买，将标记为下架状态。',
           '警告',
           {
             confirmButtonText: '确定',
@@ -319,10 +320,11 @@ export default {
         );
         await productApi.deleteProduct(productId);
         await fetchProducts();
-        ElMessage.success('商品删除成功');
+        ElMessage.success('商品已成功处理');
       } catch (error) {
         if (error !== 'cancel') {
-          ElMessage.error('删除商品失败');
+          console.error('Error deleting product:', error);
+          ElMessage.error(error.response?.data?.message || '删除商品失败');
         }
       }
     };
@@ -354,9 +356,15 @@ export default {
       }
     };
 
-    const handleUploadSuccess = (response) => {
-      editForm.value.imageUrl = response.url;
-      ElMessage.success('图片上传成功');
+    const handleUploadSuccess = async (file) => {
+      try {
+        const url = await uploadFile(file.raw);
+        editForm.value.imageUrl = url;
+        ElMessage.success('图片上传成功');
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        ElMessage.error('图片上传失败');
+      }
     };
 
     const beforeUpload = (file) => {

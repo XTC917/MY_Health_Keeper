@@ -110,9 +110,18 @@ public class ProductService {
                 throw new RuntimeException("无权删除此商品");
             }
             
-            // 删除商品
-            productRepository.delete(product);
-            System.out.println("Product deleted successfully");
+            // 检查商品是否被订单引用
+            if (!product.getOrderItems().isEmpty()) {
+                // 如果商品被订单引用，则将其标记为不可用而不是删除
+                product.setIsActive(false);
+                product.setIsAvailable(false);
+                productRepository.save(product);
+                System.out.println("Product marked as inactive due to existing orders");
+            } else {
+                // 如果商品没有被订单引用，则直接删除
+                productRepository.delete(product);
+                System.out.println("Product deleted successfully");
+            }
         } catch (Exception e) {
             System.err.println("Error in deleteProduct service: " + e.getMessage());
             e.printStackTrace();

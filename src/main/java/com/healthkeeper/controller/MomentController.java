@@ -10,7 +10,7 @@ import com.healthkeeper.repository.CourseRepository;
 import com.healthkeeper.repository.MomentRepository;
 import com.healthkeeper.repository.UserRepository;
 import com.healthkeeper.security.services.UserDetailsImpl;
-import com.healthkeeper.service.FileStorageService;
+import com.healthkeeper.service.SupabaseStorageService;
 import com.healthkeeper.service.MomentService;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +46,7 @@ public class MomentController {
     private CourseRepository courseRepository;
 
     @Autowired
-    private FileStorageService fileStorageService;
+    private SupabaseStorageService supabaseStorageService;
 
     @Autowired
     private MomentService momentService;
@@ -122,11 +122,15 @@ public class MomentController {
             if (files != null && files.length > 0) {
                 List<MediaItem> mediaItems = Arrays.stream(files)
                         .map(file -> {
-                            String url = fileStorageService.saveFile(file); // 保存文件到服务器
-                            return new MediaItem(
-                                    file.getContentType().startsWith("image") ? "image" : "video",
-                                    url
-                            );
+                            try {
+                                String url = supabaseStorageService.uploadFile(file);
+                                return new MediaItem(
+                                        file.getContentType().startsWith("image") ? "image" : "video",
+                                        url
+                                );
+                            } catch (Exception e) {
+                                throw new RuntimeException("文件上传失败: " + e.getMessage());
+                            }
                         })
                         .collect(Collectors.toList());
                 moment.setMedia(mediaItems);

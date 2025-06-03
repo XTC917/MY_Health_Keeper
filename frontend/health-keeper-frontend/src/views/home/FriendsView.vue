@@ -179,7 +179,7 @@ export default {
   setup() {
     const router = useRouter()
     const moments = ref([])
-    const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+    const defaultAvatar = 'http://localhost:8081/api/files/default-avatar.png'
 
     const friendUsername = ref('')
     const pendingRequests = ref([])

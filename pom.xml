@@ -106,6 +106,18 @@
             <artifactId>HikariCP</artifactId>
         </dependency>
 
+        <!-- Remove Supabase Java Client -->
+        <!-- <dependency>
+            <groupId>io.github.supabase</groupId>
+            <artifactId>postgrest-java</artifactId>
+            <version>0.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.supabase</groupId>
+            <artifactId>storage-java</artifactId>
+            <version>0.1.0</version>
+        </dependency> -->
+
     </dependencies>
 
 

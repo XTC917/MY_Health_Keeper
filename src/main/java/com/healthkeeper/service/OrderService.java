@@ -322,11 +322,7 @@ public class OrderService {
             itemDTO.setProductId(item.getProduct().getId());
             itemDTO.setProductName(item.getProduct().getName());
             itemDTO.setProductPrice(item.getPrice());
-            String imageUrl = item.getProduct().getImageUrl();
-            if (imageUrl != null && !imageUrl.startsWith("http")) {
-                imageUrl = "/api/files/" + imageUrl;
-            }
-            itemDTO.setProductImage(imageUrl);
+            itemDTO.setProductImage(item.getProduct().getImageUrl());
             itemDTO.setQuantity(item.getQuantity());
             itemDTO.setSubtotal(item.getSubtotal());
             dto.getItems().add(itemDTO);

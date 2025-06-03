@@ -3,6 +3,7 @@ package com.healthkeeper.dto;
 import com.healthkeeper.entity.MediaItem;
 import com.healthkeeper.entity.Moment;
 import com.healthkeeper.entity.User;
+import com.healthkeeper.entity.Comment;
 import lombok.Data;
 
 import java.time.LocalDateTime;

@@ -82,25 +82,30 @@ public class AuthTokenFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         try {
             String jwt = parseJwt(request);
+            logger.debug("Processing request: {} {}", request.getMethod(), request.getRequestURI());
+            
             if (jwt != null) {
+                logger.debug("JWT token found in request");
                 // 1. 验证 JWT 有效性
                 if (jwtUtils.validateJwtToken(jwt)) {
                     String username = jwtUtils.getUserNameFromJwtToken(jwt);
+                    logger.debug("JWT token is valid for user: {}", username);
 
                     // 2. 加载用户详情（包含角色信息）
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    logger.debug("User details loaded successfully. Roles: {}", userDetails.getAuthorities());
 
-                    // 3. 输出调试日志
-                    logger.debug("Authenticated user: {}, Roles: {}", username, userDetails.getAuthorities());
-
-                    // 4. 设置认证信息
+                    // 3. 设置认证信息
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                    logger.debug("Authentication set in SecurityContext");
                 } else {
-                    logger.warn("JWT token is invalid");
+                    logger.warn("JWT token validation failed");
                 }
+            } else {
+                logger.debug("No JWT token found in request");
             }
         } catch (UsernameNotFoundException e) {
             logger.error("User not found: {}", e.getMessage());
@@ -113,6 +118,8 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 
     private String parseJwt(HttpServletRequest request) {
         String headerAuth = request.getHeader("Authorization");
+        logger.debug("Authorization header: {}", headerAuth);
+        
         if (StringUtils.hasText(headerAuth) && headerAuth.startsWith("Bearer ")) {
             return headerAuth.substring(7);
         }

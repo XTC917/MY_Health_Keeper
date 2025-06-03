@@ -100,6 +100,12 @@
             <version>2.11.0</version>
         </dependency>
 
+        <!-- HikariCP连接池 -->
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+        </dependency>
+
     </dependencies>
 
 

@@ -6,7 +6,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
     'ngrok-skip-browser-warning': 'true'
   },
-  timeout: 10000, // 10 秒超时
+  timeout: 300000, // 5分钟超时，适用于大文件上传
 });
 
 // 请求拦截器
@@ -20,6 +20,13 @@ api.interceptors.request.use(
       console.warn('未找到用户Token，请求将不包含认证信息');
     }
     config.headers['ngrok-skip-browser-warning'] = 'true';
+    
+    // 如果是文件上传请求，设置更长的超时时间
+    if (config.data instanceof FormData) {
+      config.timeout = 300000; // 5分钟
+      config.headers['Content-Type'] = 'multipart/form-data';
+    }
+    
     console.log(`发送${config.method.toUpperCase()}请求到: ${config.baseURL}${config.url}`, config.data || config.params);
     return config;
   },

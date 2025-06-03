@@ -65,23 +65,29 @@ public class WebSecurityConfig {
         http.cors().and().csrf().disable()
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
             .authorizeHttpRequests()            
+            // 公开访问的API
             .requestMatchers("/api/auth/**").permitAll()
             .requestMatchers("/api/test/**").permitAll()
             .requestMatchers("/error").permitAll()
             .requestMatchers("/api/files/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/courses/all").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/products").permitAll()
-            .requestMatchers(HttpMethod.GET, "/api/products/{id}").permitAll()  // 允许查看商品详情
-            .requestMatchers("/api/cart/**").hasRole("USER")  // 购物车相关操作需要登录
-            .requestMatchers("/api/orders/**").hasRole("USER")  // 订单相关操作需要登录
+            .requestMatchers(HttpMethod.GET, "/api/products/{id}").permitAll()
             
-            // 好友接口权限配置
-            .requestMatchers("/api/friends/**").hasRole("USER")  // 好友列表允许 USER 角色
-            .requestMatchers("/api/friends/requests").hasRole("ADMIN") // 好友请求需要 ADMIN 角色
-            .requestMatchers(HttpMethod.GET, "/api/friends/requests").hasRole("USER") // 允许 GET
-            .requestMatchers(HttpMethod.POST, "/api/friends/requests").hasRole("USER") // 允许 POST
+            // 需要USER角色的API
+            .requestMatchers("/api/cart/**").hasRole("USER")
+            .requestMatchers("/api/orders/**").hasRole("USER")
+            .requestMatchers("/api/friends/**").hasRole("USER")
+            .requestMatchers("/api/training/**").hasRole("USER")
+            .requestMatchers("/api/moments/**").hasRole("USER")
+            .requestMatchers("/api/comments/**").hasRole("USER")
+            .requestMatchers("/api/users/**").hasRole("USER")
+            .requestMatchers("/api/health-data/**").hasRole("USER")
             
-            .requestMatchers("/api/training/**").authenticated()
+            // 需要ADMIN角色的API
+            .requestMatchers("/api/admin/**").hasRole("ADMIN")
+            
+            // 其他所有请求需要认证
             .anyRequest().authenticated();
 
         http.authenticationProvider(authenticationProvider());
@@ -104,8 +110,7 @@ public class WebSecurityConfig {
             "Authorization", 
             "Content-Type", 
             "X-Requested-With", 
-            "Accept", 
-            "*",
+            "Accept",
             "ngrok-skip-browser-warning"
         ));
         configuration.setExposedHeaders(Arrays.asList("Authorization"));

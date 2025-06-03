@@ -15,7 +15,7 @@
         <img :src="defaultAvatar" alt="avatar" class="avatar">
         <div class="user-meta">
           <span class="username">{{ moment.username }}</span>
-          <span class="time">{{ formatTime(moment.createTime) }}</span>
+          <span class="time">{{ formatTime(moment.createdAt) }}</span>
         </div>
       </div>
 

@@ -50,6 +50,12 @@ const routes = [
         component: () => import('../views/home/FriendsView.vue')
       },
       {
+        path: 'moment/:id',
+        name: 'MomentDetail',
+        component: () => import('../views/home/MomentDetailView.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: 'post-moment',
         name: 'PostMoment',
         component: () => import('../views/home/PostMomentView.vue'),

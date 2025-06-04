@@ -8,19 +8,6 @@
       </template>
       
       <el-form :model="registerForm" :rules="rules" ref="registerFormRef">
-        <el-form-item label="头像" prop="avatar">
-          <el-upload
-            class="avatar-uploader"
-            action="#"
-            :show-file-list="false"
-            :before-upload="beforeAvatarUpload"
-            :http-request="handleAvatarUpload"
-          >
-            <img v-if="registerForm.avatar" :src="registerForm.avatar" class="avatar" />
-            <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
-          </el-upload>
-        </el-form-item>
-
         <el-form-item prop="username">
           <el-input v-model="registerForm.username" placeholder="用户名"></el-input>
         </el-form-item>
@@ -57,15 +44,10 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
 import AuthService from '../api/auth'
-import api from '../api/config'
 
 export default {
   name: 'RegisterPage',
-  components: {
-    Plus
-  },
   setup() {
     const router = useRouter()
     const registerFormRef = ref(null)
@@ -76,8 +58,7 @@ export default {
       password: '',
       confirmPassword: '',
       email: '',
-      phone: '',
-      avatar: ''
+      phone: ''
     })
     
     const validatePass = (rule, value, callback) => {
@@ -119,38 +100,7 @@ export default {
       phone: [
         { required: true, message: '请输入手机号', trigger: 'blur' },
         { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
-      ],
-      avatar: [
-        { required: true, message: '请上传头像', trigger: 'change' }
       ]
-    }
-
-    const beforeAvatarUpload = (file) => {
-      const isImage = file.type.startsWith('image/')
-      if (!isImage) {
-        ElMessage.error('只能上传图片文件！')
-        return false
-      }
-      return true
-    }
-
-    const handleAvatarUpload = async (options) => {
-      const file = options.file
-      const formData = new FormData()
-      formData.append('file', file)
-
-      try {
-        const response = await api.post('/files/upload', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        })
-
-        if (response.data) {
-          registerForm.avatar = response.data
-          ElMessage.success('头像上传成功')
-        }
-      } catch (error) {
-        ElMessage.error('头像上传失败')
-      }
     }
     
     const handleRegister = async () => {
@@ -170,8 +120,7 @@ export default {
           registerForm.username,
           registerForm.email,
           registerForm.password,
-          registerForm.phone,
-          registerForm.avatar
+          registerForm.phone
         )
         
         console.log('Registration response:', response)
@@ -211,9 +160,7 @@ export default {
       registerForm,
       rules,
       loading,
-      handleRegister,
-      beforeAvatarUpload,
-      handleAvatarUpload
+      handleRegister
     }
   }
 }
@@ -248,37 +195,5 @@ export default {
 
 .form-footer a:hover {
   color: #66b1ff;
-}
-
-.avatar-uploader {
-  border: 1px dashed #d9d9d9;
-  border-radius: 6px;
-  cursor: pointer;
-  width: 128px;
-  height: 128px;
-  position: relative;
-  overflow: hidden;
-  margin: 0 auto;
-}
-
-.avatar-uploader:hover {
-  border-color: #409eff;
-}
-
-.avatar-uploader-icon {
-  font-size: 28px;
-  color: #8c939d;
-  width: 128px;
-  height: 128px;
-  line-height: 128px;
-  text-align: center;
-}
-
-.avatar {
-  width: 128px;
-  height: 128px;
-  display: block;
-  object-fit: cover;
-  border-radius: 6px;
 }
 </style> 

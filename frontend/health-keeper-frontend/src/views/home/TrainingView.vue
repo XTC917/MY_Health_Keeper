@@ -419,7 +419,6 @@ const initTrainingStatistics = () => {
 // 更新训练时长统计
 const updateTrainingStatistics = (item, isCompleted) => {
   const today = new Date()
-  const todayKey = formatDateKey(today)
   
   // 更新今日训练时长
   if (isCompleted) {

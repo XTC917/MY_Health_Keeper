@@ -20,6 +20,9 @@
               <p><i class="el-icon-time"></i> 时长：{{ course.duration }}分钟</p>
               <p><i class="el-icon-user"></i> 目标人群：{{ course.targetAudience }}</p>
               <p class="description">{{ course.description }}</p>
+              <div class="course-tags" v-if="course.category">
+                <el-tag size="small" type="success">{{ course.category }}</el-tag>
+              </div>
             </div>
             <div class="course-actions">
               <el-button type="primary" @click="viewCourse(course.id)">查看详情</el-button>
@@ -153,5 +156,11 @@ export default {
   display: flex;
   justify-content: space-between;
   margin-top: 15px;
+}
+
+.course-tags {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
 }
 </style> 

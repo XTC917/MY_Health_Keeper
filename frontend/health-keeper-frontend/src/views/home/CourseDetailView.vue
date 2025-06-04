@@ -129,7 +129,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Star, User, Timer, UserFilled, Plus, VideoPlay, ChatDotRound } from '@element-plus/icons-vue'
+import { ArrowLeft, Star, User, Timer, Plus, VideoPlay, ChatDotRound } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import CourseService from '../../api/course'
 import CourseCommentService from '../../api/courseComment'

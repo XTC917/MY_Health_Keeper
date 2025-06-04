@@ -118,7 +118,6 @@ import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { useRouter } from 'vue-router'
-import HealthDataService from '@/api/healthData'
 
 export default {
   name: 'HealthDataView',
@@ -150,6 +149,21 @@ export default {
     const editForm = ref({
       value: 0
     })
+    
+    // 从localStorage加载数据
+    const loadFromStorage = () => {
+      const storedData = localStorage.getItem('healthData')
+      if (storedData) {
+        healthHistory.value = JSON.parse(storedData)
+      } else {
+        healthHistory.value = []
+      }
+    }
+    
+    // 保存数据到localStorage
+    const saveToStorage = () => {
+      localStorage.setItem('healthData', JSON.stringify(healthHistory.value))
+    }
     
     // 最新数据计算
     const latestData = computed(() => {
@@ -244,39 +258,6 @@ export default {
       historyDialog.value.visible = true
     }
     
-    // 加载数据
-    const loadHistory = async () => {
-      try {
-        loading.value = true
-        const response = await HealthDataService.getHealthData(0, 100)
-        console.log('API Response:', response)
-        
-        // 处理响应数据
-        if (response.data && response.data.content) {
-          // 提取健康数据，忽略嵌套的用户信息
-          healthHistory.value = response.data.content.map(item => ({
-            id: item.id,
-            height: item.height,
-            weight: item.weight,
-            bmi: item.bmi,
-            recordedAt: item.recordedAt
-          }))
-        } else {
-          console.error('Unexpected response format:', response.data)
-          healthHistory.value = []
-        }
-        
-        console.log('Processed health history:', healthHistory.value)
-        initCharts()
-      } catch (error) {
-        console.error('加载数据失败:', error)
-        ElMessage.error('加载数据失败，请重试')
-        healthHistory.value = []
-      } finally {
-        loading.value = false
-      }
-    }
-    
     // 保存新数据
     const saveNewData = async () => {
       if (!editForm.value || editForm.value.value === undefined) {
@@ -285,9 +266,11 @@ export default {
       }
       
       const newData = {
+        id: Date.now(), // 使用时间戳作为ID
         height: null,
         weight: null,
-        bmi: null
+        bmi: null,
+        recordedAt: new Date().toISOString()
       }
       
       // 获取最新的身高和体重数据
@@ -311,21 +294,17 @@ export default {
       
       try {
         loading.value = true
-        console.log('Saving new data:', newData)
-        const response = await HealthDataService.addHealthData(newData)
-        console.log('Save response:', response)
+        // 添加新数据到历史记录
+        healthHistory.value.unshift(newData)
+        // 保存到localStorage
+        saveToStorage()
         
-        if (response.data) {
-          // 重新加载数据
-          await loadHistory()
-          editDialog.value.visible = false
-          ElMessage.success('数据保存成功')
-        } else {
-          throw new Error('保存失败：服务器返回数据为空')
-        }
+        editDialog.value.visible = false
+        ElMessage.success('数据保存成功')
+        initCharts()
       } catch (error) {
         console.error('保存数据失败:', error)
-        ElMessage.error(error.message || '保存数据失败，请重试')
+        ElMessage.error('保存数据失败，请重试')
       } finally {
         loading.value = false
       }
@@ -335,9 +314,13 @@ export default {
     const deleteRecord = async (id) => {
       try {
         loading.value = true
-        await HealthDataService.deleteHealthData(id)
-        await loadHistory()
+        // 从历史记录中删除数据
+        healthHistory.value = healthHistory.value.filter(item => item.id !== id)
+        // 保存到localStorage
+        saveToStorage()
+        
         ElMessage.success('记录删除成功')
+        initCharts()
       } catch (error) {
         console.error('删除记录失败:', error)
         ElMessage.error('删除记录失败，请重试')
@@ -412,7 +395,9 @@ export default {
     }
     
     onMounted(() => {
-      loadHistory()
+      // 从localStorage加载数据
+      loadFromStorage()
+      initCharts()
       
       // 监听窗口大小变化
       window.addEventListener('resize', () => {

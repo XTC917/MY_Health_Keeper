@@ -10,7 +10,7 @@ class CourseService {
   // 获取所有课程
   getAllCourses(query = '', categories = [], levels = []) {
     console.log('Fetching courses...');
-    let url = '/courses/filter';
+    let url = '/courses';
     const params = new URLSearchParams();
     
     if (query) {

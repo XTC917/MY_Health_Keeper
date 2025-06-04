@@ -64,40 +64,116 @@ SUM:                           168           2683            941          15174
 - commons-io:commons-io
 ```
 
-### 2. Documentation 
+### 2. Documentation
 
-#### Documentation for end users
-<!-- 在此处提供面向最终用户的文档链接或截图和简短描述 -->
-<!-- 如README或wiki页面，提供软件使用的必要信息或步骤 -->
+#### Documentation for End Users
 
-#### Documentation for developers
-<!-- 在此处提供面向开发者的API文档链接或截图和简短描述 -->
-<!-- 这些文档应帮助开发者、合作者或潜在的未来贡献者了解设计、目的和重要代码实体的实现 -->
+我们的项目为最终用户提供了详细的使用指南和帮助文档，主要包含：
 
-### 3. Tests 
+- **README 文件**  
+  位于 GitHub 仓库根目录的 `README.md`，包含项目介绍、安装步骤、运行环境配置、快速启动指南和常见问题解决方案。
+
+- **用户手册**  
+  Wiki 页面详细介绍了系统各个模块的功能说明、用户注册登录流程、健康数据录入与查询、好友动态浏览和排行榜使用方法。
+
+- **界面操作说明**  
+  配合项目演示视频和截图，帮助用户快速理解各页面操作及系统交互。
+
+- **用户文档地址**  
+  [https://github.com/sustech-cs304/team-project-25spring-52/blob/Friends/userDocumentation](https://github.com/sustech-cs304/team-project-25spring-52/blob/Friends/userDocumentation)
+
+---
+
+#### Documentation for Developers
+
+项目为开发者和维护人员提供了全面的 API 和架构文档，内容涵盖：
+
+- **系统架构设计文档**  
+  包括模块划分、关键类图、数据库 ER 图和安全设计说明。
+
+- **核心类和方法注释**  
+  代码中详细注释了重要的服务层、控制器层及工具类（如 `JwtUtils`），帮助理解实现逻辑。
+
+- **接口文档**  
+  使用 Swagger 自动生成的 REST API 文档，方便开发者调用和调试后端接口。
+
+- **配置说明**  
+  详细介绍了数据库连接配置、JWT 参数说明及安全相关配置。
+
+- **扩展指南**  
+  说明如何新增功能模块、调整认证流程及扩展前后端交互。
+
+- **开发者文档地址**  
+  [https://github.com/sustech-cs304/team-project-25spring-52/blob/Friends/index.html](https://github.com/sustech-cs304/team-project-25spring-52/blob/Friends/index.html)
+
+### 3. Tests
 
 #### Testing Technologies and Approaches
-<!-- 描述用于自动测试项目的技术/工具/框架/方法 -->
+
+本项目采用以下技术进行自动化测试：
+
+- **JUnit 5**：编写单元测试和集成测试，验证服务层和数据访问层逻辑。
+- **Spring Boot Test**：提供 Spring 上下文支持，测试控制器和服务层集成行为。
+- **Mockito**：模拟外部依赖（如数据库），确保单元测试隔离性。
+- **Maven**：通过 `mvn test` 运行测试，管理依赖和测试生命周期。
+- **JaCoCo**：生成测试覆盖率报告，评估代码覆盖程度。
+
+测试方法包括：
+
+- **单元测试**：测试服务层逻辑，覆盖核心功能和异常处理。
+- **集成测试**：验证组件协作，连接真实或模拟数据库。
+- **Mock MVC 测试**：测试 REST API 端点，确保正确响应。
 
 #### Test Source Code or Artifacts
-<!-- 提供测试源代码或相关制品的URL链接或截图 -->
+
+测试代码位于 `src/test/java`，包括服务层（`UserServiceTest`）和控制器（`UserControllerTest`）的单元测试及 Mock MVC 测试。代码已上传至 GitHub：
+
+- 测试代码链接：[team-project-25spring-52/src/test/java/com/healthkeeper at Friends · sustech-cs304/team-project-25spring-52](https://github.com/sustech-cs304/team-project-25spring-52/tree/Friends/src/test/java/com/healthkeeper)
 
 #### Test Effectiveness
-<!-- 简要回答和解释测试的有效性，可以使用测试覆盖率报告来展示 -->
 
-### 4. Build 
+采用 JaCoCo 生成覆盖率报告，测试用例主要涉及service和controller，覆盖核心功能。报告位于`target/site/jacoco/index.html`，验证了系统的正确性和可靠性。
+
+### 4. Build
 
 #### Build Technologies and Approaches
-<!-- 描述用于构建项目的技术/工具/框架/方法 -->
+
+本项目使用以下技术进行构建：
+
+- **Maven**：核心构建工具，管理依赖、编译、测试和打包。
+- **Java 17**：项目开发语言，编译为字节码。
+- **Spring Boot Maven Plugin**：支持生成可执行 JAR/WAR 文件，简化部署。
+- **JaCoCo**：生成测试覆盖率报告，评估代码质量。
+- **Git**：版本控制，管理源代码和构建配置。
+
+构建方法：
+
+- 通过 Maven 生命周期（`compile`、`test`、`package`）自动化完成代码编译、测试和打包。
+- 使用标准 Maven 目录结构，源码位于 `src/main/java`，测试代码位于 `src/test/java`。
 
 #### Build Tasks
-<!-- 描述构建中执行的任务，除了编译和打包外，还可以考虑添加linters、测试、测试报告生成和文档生成 -->
+
+构建过程执行以下任务：
+
+- **编译**：使用 `mvn compile` 将 Java 源码编译为字节码。
+- **测试**：通过 `mvn test` 运行单元测试和集成测试（基于 JUnit 5 和 Spring Boot Test）。
+- **测试报告生成**：使用 JaCoCo 插件生成覆盖率报告（`target/site/jacoco/index.html`）。
+- **代码质量检查**：集成 Checkstyle 插件，检查代码规范（配置在 `pom.xml`）。
+- **打包**：通过 `mvn package` 生成可执行 JAR 文件。
 
 #### Build Artifacts
-<!-- 描述成功构建产生的最终制品 -->
+
+成功构建产生的制品：
+
+- **可执行 JAR 文件**：`target/java_personal_health_assistant-0.0.1-SNAPSHOT.jar`，包含应用及其依赖，可直接运行。
+- **JaCoCo 覆盖率报告**：`target/site/jacoco/index.html`，展示测试覆盖率。
 
 #### Build Configuration Files
-<!-- 提供构建文件(如pom.xml)或相关制品/脚本的URL链接或截图 -->
+
+构建配置文件为 `pom.xml`，定义依赖、插件和构建任务：
+
+- 链接：[team-project-25spring-52/pom.xml at Friends · sustech-cs304/team-project-25spring-52](https://github.com/sustech-cs304/team-project-25spring-52/blob/Friends/pom.xml)
+- 主要配置包括：`spring-boot-starter` 依赖提供核心功能，`spring-boot-starter-web` 支持 REST API，`spring-boot-starter-test` 支持 JUnit 5 测试，`spring-boot-maven-plugin` 生成可执行 JAR，`jacoco-maven-plugin` 生成测试覆盖率报告。
 
 ### 5. Deployment 
 

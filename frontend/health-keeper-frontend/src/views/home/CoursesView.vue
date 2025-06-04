@@ -66,6 +66,10 @@ const loadCourses = async () => {
     if (response.data && Array.isArray(response.data)) {
       courses.value = response.data;
       console.log('Loaded courses:', courses.value);
+      // 检查每个课程的category字段
+      courses.value.forEach(course => {
+        console.log(`Course ${course.title} category:`, course.category);
+      });
     } else {
       console.error('Invalid courses data format:', response.data);
       ElMessage.error('课程数据格式错误，请稍后重试');

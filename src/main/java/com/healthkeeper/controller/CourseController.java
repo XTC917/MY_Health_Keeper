@@ -69,6 +69,7 @@ public class CourseController {
             
             // 处理每个课程，确保没有循环引用
             List<Map<String, Object>> courseList = allCourses.stream().map(course -> {
+                System.out.println("Processing course: " + course.getTitle() + ", category: " + course.getCategory());
                 Map<String, Object> courseMap = new HashMap<>();
                 courseMap.put("id", course.getId());
                 courseMap.put("title", course.getTitle());

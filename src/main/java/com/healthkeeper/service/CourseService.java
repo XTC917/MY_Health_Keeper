@@ -35,6 +35,8 @@ public class CourseService {
         course.setCreatorId(creator.getId());
         course.setStatus("PUBLISHED");
         course.setIsPublished(true);
+        course.setCategory(courseRequest.getCategory());
+        course.setLevel(courseRequest.getLevel());
 
         System.out.println("Saving course with title: " + course.getTitle());
         Course savedCourse = courseRepository.save(course);

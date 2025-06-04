@@ -22,4 +22,10 @@ public class CourseRequest {
 
     @NotBlank(message = "课程简介不能为空")
     private String description;
+
+    @NotBlank(message = "课程分类不能为空")
+    private String category;
+
+    @NotBlank(message = "课程难度不能为空")
+    private String level;
 } 

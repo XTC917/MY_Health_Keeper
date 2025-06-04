@@ -163,7 +163,10 @@ const submitForm = async () => {
       duration: courseForm.duration,
       videoUrl: courseForm.videoUrl,
       targetAudience: courseForm.target,
-      description: courseForm.description
+      description: courseForm.description,
+      category: courseForm.category,
+      level: courseForm.level,
+      price: courseForm.price
     }
     
     // 发送到后端API

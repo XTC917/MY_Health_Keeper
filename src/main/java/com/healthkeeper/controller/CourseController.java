@@ -22,9 +22,11 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -258,8 +260,58 @@ public class CourseController {
 
     @GetMapping("/search")
     public ResponseEntity<?> searchCourses(@RequestParam String query) {
-        List<Course> courses = courseRepository.findByTitleContainingIgnoreCase(query);
-        return ResponseEntity.ok(courses);
+        try {
+            System.out.println("Searching courses with query: " + query);
+            // 先按标题搜索
+            List<Course> titleResults = courseRepository.findByTitleContainingIgnoreCase(query);
+            // 再按分类搜索
+            List<Course> categoryResults = courseRepository.findByCategoryContainingIgnoreCase(query);
+            
+            // 合并结果并去重
+            Set<Course> uniqueResults = new HashSet<>();
+            uniqueResults.addAll(titleResults);
+            uniqueResults.addAll(categoryResults);
+            
+            List<Course> results = new ArrayList<>(uniqueResults);
+            
+            // 处理每个课程，确保没有循环引用
+            List<Map<String, Object>> courseList = results.stream().map(course -> {
+                Map<String, Object> courseMap = new HashMap<>();
+                courseMap.put("id", course.getId());
+                courseMap.put("title", course.getTitle());
+                courseMap.put("duration", course.getDuration());
+                courseMap.put("targetAudience", course.getTargetAudience());
+                courseMap.put("description", course.getDescription());
+                courseMap.put("price", course.getPrice());
+                courseMap.put("rating", course.getRating());
+                courseMap.put("totalStudents", course.getTotalStudents());
+                courseMap.put("status", course.getStatus());
+                courseMap.put("thumbnail", course.getThumbnail());
+                courseMap.put("videoUrl", course.getVideoUrl());
+                courseMap.put("level", course.getLevel());
+                courseMap.put("coverImage", course.getCoverImage());
+                courseMap.put("content", course.getContent());
+                courseMap.put("category", course.getCategory());
+                courseMap.put("createdAt", course.getCreatedAt());
+                courseMap.put("updatedAt", course.getUpdatedAt());
+                
+                // 处理创建者信息
+                if (course.getCreatorId() != null) {
+                    User user = userRepository.findById(course.getCreatorId()).orElse(null);
+                    if (user != null) {
+                        courseMap.put("author", user.getUsername());
+                    }
+                }
+                
+                return courseMap;
+            }).collect(Collectors.toList());
+            
+            return ResponseEntity.ok(courseList);
+        } catch (Exception e) {
+            System.err.println("Error in searchCourses: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error searching courses: " + e.getMessage());
+        }
     }
 
     @PostMapping("/{id}/enroll")

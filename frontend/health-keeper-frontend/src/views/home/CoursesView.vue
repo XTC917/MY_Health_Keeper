@@ -2,6 +2,19 @@
   <div class="courses-view">
     <div class="header">
       <h2>课程学习</h2>
+      <div class="search-bar">
+        <el-input
+          v-model="searchQuery"
+          placeholder="搜索课程名称或标签"
+          class="search-input"
+          clearable
+          @input="handleSearch"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
+      </div>
     </div>
 
     <div class="content" v-loading="loading">
@@ -49,27 +62,26 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 import CourseService from '../../api/course'
 
 const router = useRouter()
 const courses = ref([])
 const loading = ref(false)
+const searchQuery = ref('')
+let searchTimeout = null
 
 // 加载课程列表
-const loadCourses = async () => {
+const loadCourses = async (query = '') => {
   loading.value = true;
   try {
-    console.log('Loading all courses...');
-    const response = await CourseService.getAllCourses();
+    console.log('Loading courses...');
+    const response = await CourseService.getAllCourses(query);
     console.log('Courses response:', response);
     
     if (response.data && Array.isArray(response.data)) {
       courses.value = response.data;
       console.log('Loaded courses:', courses.value);
-      // 检查每个课程的category字段
-      courses.value.forEach(course => {
-        console.log(`Course ${course.title} category:`, course.category);
-      });
     } else {
       console.error('Invalid courses data format:', response.data);
       ElMessage.error('课程数据格式错误，请稍后重试');
@@ -83,6 +95,16 @@ const loadCourses = async () => {
   } finally {
     loading.value = false;
   }
+}
+
+// 处理搜索
+const handleSearch = () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
+  searchTimeout = setTimeout(() => {
+    loadCourses(searchQuery.value);
+  }, 300);
 }
 
 // 加入课程
@@ -166,12 +188,22 @@ onMounted(() => {
 .header {
   padding: 16px;
   border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .header h2 {
   margin: 0;
   font-size: 18px;
-  text-align: center;
+}
+
+.search-bar {
+  width: 300px;
+}
+
+.search-input {
+  width: 100%;
 }
 
 .content {

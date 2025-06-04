@@ -8,9 +8,10 @@ class CourseService {
   }
 
   // 获取所有课程
-  getAllCourses() {
-    console.log('Fetching all courses...');
-    return api.get('/courses/all')
+  getAllCourses(query = '') {
+    console.log('Fetching courses...');
+    const url = query ? `/courses/search?query=${encodeURIComponent(query)}` : '/courses/all';
+    return api.get(url)
       .then(response => {
         console.log('Courses response:', response);
         if (!response.data || !Array.isArray(response.data)) {

@@ -66,19 +66,36 @@
           </el-upload>
         </el-form-item>
 
-        <el-form-item label="课程分类" prop="category">
-          <el-select v-model="courseForm.category" placeholder="请选择课程分类">
-            <el-option label="FITNESS" value="FITNESS" />
-            <el-option label="DIET" value="DIET" />
-            <el-option label="MIND" value="MIND" />
+        <el-form-item label="课程分类" prop="categories">
+          <el-select
+            v-model="courseForm.categories"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            placeholder="请选择或输入课程分类"
+            style="width: 100%"
+          >
+            <el-option label="燃脂" value="燃脂" />
+            <el-option label="瘦腿" value="瘦腿" />
+            <el-option label="增肌" value="增肌" />
+            <el-option label="瑜伽" value="瑜伽" />
+            <el-option label="普拉提" value="普拉提" />
+            <el-option label="有氧" value="有氧" />
+            <el-option label="力量" value="力量" />
+            <el-option label="拉伸" value="拉伸" />
+            <el-option label="核心" value="核心" />
+            <el-option label="拳击" value="拳击" />
+            <el-option label="舞蹈" value="舞蹈" />
+            <el-option label="康复" value="康复" />
           </el-select>
         </el-form-item>
 
         <el-form-item label="课程难度" prop="level">
           <el-select v-model="courseForm.level" placeholder="请选择课程难度">
-            <el-option label="BEGINNER" value="BEGINNER" />
-            <el-option label="INTERMEDIATE" value="INTERMEDIATE" />
-            <el-option label="ADVANCED" value="ADVANCED" />
+            <el-option label="初级" value="BEGINNER" />
+            <el-option label="中级" value="INTERMEDIATE" />
+            <el-option label="高级" value="ADVANCED" />
           </el-select>
         </el-form-item>
 
@@ -114,7 +131,7 @@ const courseForm = reactive({
   videoUrl: '',
   target: '',
   description: '',
-  category: 'FITNESS',
+  categories: [],
   level: 'BEGINNER',
   price: 0
 })
@@ -126,7 +143,7 @@ const rules = {
   videoUrl: [{ required: true, message: '请上传课程视频', trigger: 'change' }],
   target: [{ required: true, message: '请输入目标人群', trigger: 'blur' }],
   description: [{ required: true, message: '请输入课程描述', trigger: 'blur' }],
-  category: [{ required: true, message: '请选择课程分类', trigger: 'change' }],
+  categories: [{ required: true, message: '请至少选择一个课程分类', trigger: 'change' }],
   level: [{ required: true, message: '请选择课程难度', trigger: 'change' }]
 }
 
@@ -164,7 +181,7 @@ const submitForm = async () => {
       videoUrl: courseForm.videoUrl,
       targetAudience: courseForm.target,
       description: courseForm.description,
-      category: courseForm.category,
+      category: courseForm.categories.join(','),
       level: courseForm.level,
       price: courseForm.price
     }

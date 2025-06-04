@@ -2,10 +2,24 @@
   <div class="mall-container">
     <div class="mall-header">
       <h1>健康商城</h1>
-      <router-link to="/home/cart" class="cart-icon">
-        <i class="icon">🛒</i>
-        <span class="cart-count" v-if="cartItemCount > 0">{{ cartItemCount }}</span>
-      </router-link>
+      <div class="header-actions">
+        <div class="search-box">
+          <el-input
+            v-model="searchQuery"
+            placeholder="搜索商品名称"
+            clearable
+            @input="handleSearch"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
+        <router-link to="/home/cart" class="cart-icon">
+          <i class="icon">🛒</i>
+          <span class="cart-count" v-if="cartItemCount > 0">{{ cartItemCount }}</span>
+        </router-link>
+      </div>
     </div>
     <div v-if="loading" class="loading">
       <el-skeleton :rows="3" animated />
@@ -19,11 +33,11 @@
       />
       <el-button type="primary" @click="fetchProducts">重试</el-button>
     </div>
-    <div v-else-if="products.length === 0" class="empty">
+    <div v-else-if="filteredProducts.length === 0" class="empty">
       <el-empty description="暂无商品" />
     </div>
     <div v-else class="product-grid">
-      <div v-for="product in products" :key="product.id" class="product-card">
+      <div v-for="product in filteredProducts" :key="product.id" class="product-card">
         <img :src="product.imageUrl" class="product-image" @click="viewProductDetail(product.id)">
         <div class="product-info">
           <h3>{{ product.name }}</h3>
@@ -38,20 +52,39 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { productApi } from '@/api/product';
 import { cartApi } from '@/api/cart';
 import { ElMessage } from 'element-plus';
+import { Search } from '@element-plus/icons-vue';
 
 export default {
   name: 'MallView',
+  components: {
+    Search
+  },
   setup() {
     const router = useRouter();
     const products = ref([]);
     const loading = ref(true);
     const error = ref(null);
     const cartItemCount = ref(0);
+    const searchQuery = ref('');
+
+    const filteredProducts = computed(() => {
+      if (!searchQuery.value) {
+        return products.value;
+      }
+      const query = searchQuery.value.toLowerCase();
+      return products.value.filter(product => 
+        product.name.toLowerCase().includes(query)
+      );
+    });
+
+    const handleSearch = () => {
+      // 搜索功能通过计算属性自动实现
+    };
 
     const fetchProducts = async () => {
       loading.value = true;
@@ -106,6 +139,9 @@ export default {
       loading,
       error,
       cartItemCount,
+      searchQuery,
+      filteredProducts,
+      handleSearch,
       viewProductDetail,
       addToCart
     };
@@ -125,6 +161,16 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.search-box {
+  width: 300px;
 }
 
 .cart-icon {
@@ -184,6 +230,7 @@ export default {
   width: 100%;
   height: 200px;
   object-fit: cover;
+  cursor: pointer;
 }
 
 .product-info {

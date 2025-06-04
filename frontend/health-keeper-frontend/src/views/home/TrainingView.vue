@@ -408,6 +408,9 @@ const loadDailySchedule = async () => {
     // 尝试从API获取特定日期的训练计划
     const response = await TrainingService.getDailySchedule(key)
     dailySchedule.value = response.data || []
+    
+    // 更新本地数据
+    scheduleData.value[key] = dailySchedule.value
   } catch (error) {
     console.error('Error loading daily schedule:', error)
     // 如果API调用失败，使用本地数据
@@ -577,6 +580,14 @@ const updateCompletion = async (item) => {
     
     // 重新加载统计数据
     await loadTrainingStatistics()
+    
+    // 直接获取当天的训练时长
+    const todayKey = formatDateKey(selectedDate.value)
+    const durationResponse = await TrainingService.getDailyTrainingDuration(todayKey)
+    todayDuration.value = durationResponse.data || 0
+    
+    // 重新加载当天的训练计划
+    await loadDailySchedule()
   } catch (error) {
     console.error('Error updating completion status:', error)
     ElMessage.error('更新状态失败，请重试')

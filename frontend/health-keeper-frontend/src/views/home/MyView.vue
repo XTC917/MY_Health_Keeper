@@ -66,11 +66,21 @@ onMounted(async () => {
     // 从后端获取最新的用户信息
     const res = await UserService.getProfile()
     if (res.data) {
+      console.log('获取到的用户信息:', res.data)
       userInfo.value = res.data
       // 更新 localStorage 中的用户信息
       localStorage.setItem('user', JSON.stringify(res.data))
+      
+      // 检查头像URL
+      if (!userInfo.value.avatar) {
+        console.log('用户没有头像，使用默认头像')
+        userInfo.value.avatar = 'https://cc04-2001-da8-201d-1112-4634-61a8-d2b2-3ca4.ngrok-free.app/api/files/default-avatar.png'
+      } else {
+        console.log('用户头像URL:', userInfo.value.avatar)
+      }
     }
   } catch (error) {
+    console.error('获取用户信息失败:', error)
     ElMessage.error('获取用户信息失败')
     if (error.response?.status === 403) {
       ElMessage.error('登录已过期，请重新登录')

@@ -42,7 +42,19 @@ public class UserController {
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         User user = userRepository.findById(userDetails.getId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        return ResponseEntity.ok(user);
+
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("id", user.getId());
+        userInfo.put("username", user.getUsername());
+        userInfo.put("email", user.getEmail());
+        userInfo.put("phone", user.getPhone());
+        userInfo.put("address", user.getAddress());
+        userInfo.put("gender", user.getGender());
+        userInfo.put("avatar", user.getAvatar());
+        userInfo.put("birthDate", user.getBirthDate());
+        userInfo.put("createdAt", user.getCreatedAt());
+
+        return ResponseEntity.ok(userInfo);
     }
 
     @PutMapping("/me")

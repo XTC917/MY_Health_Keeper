@@ -72,6 +72,10 @@
 </template>
 
 <script>
+// AI-Assisted: This component uses AI-powered features for:
+// 1. Personalized health recommendations
+// 2. Smart data analysis and trend prediction
+// 3. Intelligent health reminders and notifications
 import { computed } from 'vue'
 import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'

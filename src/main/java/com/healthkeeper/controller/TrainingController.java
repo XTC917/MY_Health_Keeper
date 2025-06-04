@@ -8,14 +8,17 @@
  */
 package com.healthkeeper.controller;
 
+import com.healthkeeper.dto.BatchTrainingScheduleRequest;
 import com.healthkeeper.dto.TrainingScheduleDto;
 import com.healthkeeper.dto.TrainingScheduleRequest;
+import com.healthkeeper.dto.TrainingStatisticsResponse;
 import com.healthkeeper.service.TrainingScheduleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -34,11 +37,14 @@ public class TrainingController {
     @GetMapping("/schedule/{date}")
     public ResponseEntity<List<TrainingScheduleDto>> getDailySchedule(@PathVariable String date) {
         return ResponseEntity.ok(trainingScheduleService.getDailySchedule(date));
-    }
-
-    @PostMapping("/schedule")
+    }    @PostMapping("/schedule")
     public ResponseEntity<TrainingScheduleDto> addScheduleItem(@RequestBody TrainingScheduleRequest request) {
         return new ResponseEntity<>(trainingScheduleService.addScheduleItem(request), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/schedule/batch")
+    public ResponseEntity<List<TrainingScheduleDto>> addBatchScheduleItems(@RequestBody BatchTrainingScheduleRequest request) {
+        return new ResponseEntity<>(trainingScheduleService.addBatchScheduleItems(request), HttpStatus.CREATED);
     }
 
     @PutMapping("/schedule/item/{itemId}")
@@ -65,7 +71,20 @@ public class TrainingController {
     public ResponseEntity<TrainingScheduleDto> updateCompletionStatus(
             @PathVariable Long itemId,
             @RequestBody Map<String, Boolean> requestBody) {
-        boolean completed = requestBody.get("completed");
+        boolean completed = requestBody.getOrDefault("completed", false);
         return ResponseEntity.ok(trainingScheduleService.updateCompletionStatus(itemId, completed));
     }
-} 
+    
+    // 获取训练统计数据
+    @GetMapping("/statistics")
+    public ResponseEntity<TrainingStatisticsResponse> getTrainingStatistics() {
+        return ResponseEntity.ok(trainingScheduleService.getTrainingStatistics());
+    }
+    
+    // 获取指定日期的训练时长
+    @GetMapping("/daily-duration/{date}")
+    public ResponseEntity<Integer> getDailyTrainingDuration(@PathVariable String date) {
+        LocalDate localDate = LocalDate.parse(date);
+        return ResponseEntity.ok(trainingScheduleService.getDailyTrainingDuration(localDate));
+    }
+}

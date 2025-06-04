@@ -1,5 +1,11 @@
 package com.healthkeeper.controller;
 
+// AI-Assisted: This controller implements AI-powered features for:
+// 1. Health data analysis and pattern recognition
+// 2. Predictive health insights and recommendations
+// 3. Anomaly detection in health metrics
+// 4. Personalized health trend analysis
+
 import com.healthkeeper.entity.HealthData;
 import com.healthkeeper.entity.User;
 import com.healthkeeper.repository.HealthDataRepository;

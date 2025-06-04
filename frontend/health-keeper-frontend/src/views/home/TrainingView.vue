@@ -15,11 +15,14 @@
     </div>
 
     <div class="content">
-      <div class="training-layout">
-        <!-- 左侧训练计划列表 -->
+      <div class="training-layout">          <!-- 左侧训练计划列表 -->
         <div class="training-schedule">
           <div class="date-header">
             <h3>{{ formatDate(selectedDate) }} 训练计划</h3>
+            <!-- 显示当日训练时长 -->
+            <div class="daily-duration">
+              今日训练时长: {{ todayDuration }} 分钟
+            </div>
             <el-button type="primary" size="small" @click="openAddCourseDialog">添加课程</el-button>
           </div>
           
@@ -72,21 +75,35 @@
               >
                 <div class="solar-date">{{ date.getDate() }}</div>
                 <div class="lunar-date">{{ getLunarDate(date) }}</div>
-              </div>
-            </div>
-          </div>
+              </div>        </div>
+      </div>
+      
+      <!-- 训练统计图表部分 -->
+      <div class="training-statistics">
+        <h3>训练时长统计</h3>
+        
+        <!-- 周统计图表 -->
+        <div class="chart-container">
+          <h4>近12周训练时长</h4>
+          <div ref="weeklyChart" class="chart"></div>
+        </div>
+        
+        <!-- 月统计图表 -->
+        <div class="chart-container">
+          <h4>近12个月训练时长</h4>
+          <div ref="monthlyChart" class="chart"></div>
         </div>
       </div>
     </div>
-
-    <!-- 添加课程对话框 -->
+      </div>
+    </div>    <!-- 添加课程对话框 -->
     <el-dialog
       v-model="addCourseDialogVisible"
       title="添加课程到训练计划"
-      width="500px"
+      width="600px"
     >
       <div class="add-course-form">
-        <el-form :model="newScheduleItem" label-width="100px">
+        <el-form :model="newScheduleItem" label-width="120px">
           <el-form-item label="选择课程">
             <el-select v-model="newScheduleItem.courseId" placeholder="请选择课程" style="width: 100%">
               <el-option
@@ -100,6 +117,56 @@
           <el-form-item label="开始时间">
             <el-time-picker v-model="newScheduleItem.startTime" format="HH:mm" placeholder="选择时间" style="width: 100%" />
           </el-form-item>
+          
+          <!-- 添加模式选择 -->
+          <el-form-item label="添加模式">
+            <el-radio-group v-model="newScheduleItem.addMode">
+              <el-radio value="single">单次添加</el-radio>
+              <el-radio value="weekly">按周重复</el-radio>
+              <el-radio value="dateRange">日期范围</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          
+          <!-- 按周重复选项 -->
+          <template v-if="newScheduleItem.addMode === 'weekly'">
+            <el-form-item label="选择周几">
+              <el-checkbox-group v-model="newScheduleItem.weekdays">
+                <el-checkbox value="1">周一</el-checkbox>
+                <el-checkbox value="2">周二</el-checkbox>
+                <el-checkbox value="3">周三</el-checkbox>
+                <el-checkbox value="4">周四</el-checkbox>
+                <el-checkbox value="5">周五</el-checkbox>
+                <el-checkbox value="6">周六</el-checkbox>
+                <el-checkbox value="0">周日</el-checkbox>
+              </el-checkbox-group>
+            </el-form-item>
+            <el-form-item label="日期范围">
+              <el-date-picker
+                v-model="newScheduleItem.dateRange"
+                type="daterange"
+                range-separator="至"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                format="YYYY-MM-DD"
+                value-format="YYYY-MM-DD"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </template>
+          
+          <!-- 日期范围选项 -->
+          <template v-if="newScheduleItem.addMode === 'dateRange'">
+            <el-form-item label="选择日期">
+              <el-date-picker
+                v-model="newScheduleItem.selectedDates"
+                type="dates"
+                placeholder="选择多个日期"
+                format="YYYY-MM-DD"
+                value-format="YYYY-MM-DD"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </template>
         </el-form>
       </div>
       <template #footer>
@@ -113,10 +180,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
+import * as echarts from 'echarts'
 import CourseService from '../../api/course'
 import TrainingService from '../../api/training'
 
@@ -287,6 +355,14 @@ const enrolledCourses = ref([])
 const dailySchedule = ref([])
 const scheduleData = ref({}) // 存储所有训练计划数据 { '2023-5-1': [{...}] }
 
+// 训练统计相关数据
+const trainingStatistics = ref(null)
+const todayDuration = ref(0)
+const weeklyChart = ref(null)
+const monthlyChart = ref(null)
+let weeklyChartInstance = null
+let monthlyChartInstance = null
+
 // 加载用户已加入的课程
 const loadEnrolledCourses = async () => {
   try {
@@ -339,6 +415,141 @@ const loadDailySchedule = async () => {
   }
 }
 
+// 加载训练统计数据
+const loadTrainingStatistics = async () => {
+  try {
+    const response = await TrainingService.getTrainingStatistics()
+    trainingStatistics.value = response.data
+    
+    // 更新今日训练时长
+    if (trainingStatistics.value && trainingStatistics.value.todayTraining) {
+      todayDuration.value = trainingStatistics.value.todayTraining.totalMinutes
+    }
+    
+    // 创建图表
+    await nextTick()
+    initCharts()
+  } catch (error) {
+    console.error('Error loading training statistics:', error)
+    ElMessage.error('加载统计数据失败')
+  }
+}
+
+// 初始化图表
+const initCharts = () => {
+  if (!trainingStatistics.value) return
+  
+  // 初始化周统计图表
+  if (weeklyChart.value) {
+    weeklyChartInstance = echarts.init(weeklyChart.value)
+    const weeklyOption = {
+      title: {
+        text: '近12周训练时长',
+        textStyle: {
+          fontSize: 14
+        }
+      },
+      tooltip: {
+        trigger: 'axis',
+        formatter: function(params) {
+          let result = params[0].name + '<br/>'
+          params.forEach(item => {
+            result += item.seriesName + ': ' + item.value + '分钟<br/>'
+          })
+          return result
+        }
+      },
+      legend: {
+        data: ['课程训练', '自定义训练']
+      },
+      xAxis: {
+        type: 'category',
+        data: trainingStatistics.value.last12Weeks.map(item => item.week)
+      },
+      yAxis: {
+        type: 'value',
+        name: '时长(分钟)'
+      },
+      series: [
+        {
+          name: '课程训练',
+          type: 'bar',
+          stack: 'total',
+          data: trainingStatistics.value.last12Weeks.map(item => item.courseMinutes),
+          itemStyle: {
+            color: '#409EFF'
+          }
+        },
+        {
+          name: '自定义训练',
+          type: 'bar',
+          stack: 'total',
+          data: trainingStatistics.value.last12Weeks.map(item => item.customTrainingMinutes),
+          itemStyle: {
+            color: '#67C23A'
+          }
+        }
+      ]
+    }
+    weeklyChartInstance.setOption(weeklyOption)
+  }
+  
+  // 初始化月统计图表
+  if (monthlyChart.value) {
+    monthlyChartInstance = echarts.init(monthlyChart.value)
+    const monthlyOption = {
+      title: {
+        text: '近12个月训练时长',
+        textStyle: {
+          fontSize: 14
+        }
+      },
+      tooltip: {
+        trigger: 'axis',
+        formatter: function(params) {
+          let result = params[0].name + '<br/>'
+          params.forEach(item => {
+            result += item.seriesName + ': ' + item.value + '分钟<br/>'
+          })
+          return result
+        }
+      },
+      legend: {
+        data: ['课程训练', '自定义训练']
+      },
+      xAxis: {
+        type: 'category',
+        data: trainingStatistics.value.last12Months.map(item => item.month)
+      },
+      yAxis: {
+        type: 'value',
+        name: '时长(分钟)'
+      },
+      series: [
+        {
+          name: '课程训练',
+          type: 'line',
+          data: trainingStatistics.value.last12Months.map(item => item.courseMinutes),
+          smooth: true,
+          itemStyle: {
+            color: '#409EFF'
+          }
+        },
+        {
+          name: '自定义训练',
+          type: 'line',
+          data: trainingStatistics.value.last12Months.map(item => item.customTrainingMinutes),
+          smooth: true,
+          itemStyle: {
+            color: '#67C23A'
+          }
+        }
+      ]
+    }
+    monthlyChartInstance.setOption(monthlyOption)
+  }
+}
+
 // 跳转到课程详情页
 const goToCourseDetail = (courseId) => {
   router.push(`/home/course/${courseId}`)
@@ -363,6 +574,9 @@ const updateCompletion = async (item) => {
         scheduleData.value[key][index].completed = item.completed
       }
     }
+    
+    // 重新加载统计数据
+    await loadTrainingStatistics()
   } catch (error) {
     console.error('Error updating completion status:', error)
     ElMessage.error('更新状态失败，请重试')
@@ -376,14 +590,22 @@ const updateCompletion = async (item) => {
 const addCourseDialogVisible = ref(false)
 const newScheduleItem = ref({
   courseId: null,
-  startTime: null
+  startTime: null,
+  addMode: 'single', // 'single', 'weekly', 'dateRange'
+  weekdays: [], // 选择的周几 ['1', '2', '3']等
+  dateRange: null, // 日期范围 ['2025-06-01', '2025-06-30']
+  selectedDates: [] // 选择的多个日期
 })
 
 // 打开添加课程对话框
 const openAddCourseDialog = () => {
   newScheduleItem.value = {
     courseId: null,
-    startTime: null
+    startTime: null,
+    addMode: 'single',
+    weekdays: [],
+    dateRange: null,
+    selectedDates: []
   }
   addCourseDialogVisible.value = true
 }
@@ -403,48 +625,92 @@ const addCourseToSchedule = async () => {
       return
     }
     
-    // 准备要发送到后端的数据
-    const scheduleItemData = {
-      courseId: newScheduleItem.value.courseId,
-      date: formatDateKey(selectedDate.value),
-      startTime: formatTime(newScheduleItem.value.startTime)
+    let scheduleItems = []
+    
+    if (newScheduleItem.value.addMode === 'single') {
+      // 单次添加模式 - 使用原有的单个添加API
+      const scheduleItemData = {
+        courseId: newScheduleItem.value.courseId,
+        date: formatDateKey(selectedDate.value),
+        startTime: formatTime(newScheduleItem.value.startTime)
+      }
+      
+      console.log('发送单个添加请求:', scheduleItemData)
+      const response = await TrainingService.addScheduleItem(scheduleItemData)
+      
+      console.log('添加训练计划成功，返回数据:', response.data)
+      
+      // 构造新的计划项
+      const newItem = {
+        id: response.data.id,
+        courseId: newScheduleItem.value.courseId,
+        courseName: course.title,
+        startTime: formatTime(newScheduleItem.value.startTime),
+        completed: false
+      }
+      
+      // 更新本地数据
+      const key = formatDateKey(selectedDate.value)
+      if (!scheduleData.value[key]) {
+        scheduleData.value[key] = []
+      }
+      scheduleData.value[key].push(newItem)
+      
+      // 更新当天计划
+      loadDailySchedule()
+      
+      ElMessage.success('课程已添加到训练计划')
+      addCourseDialogVisible.value = false
+      return
+    } 
+    
+    // 批量添加模式
+    if (newScheduleItem.value.addMode === 'weekly') {
+      // 按周重复模式
+      if (!newScheduleItem.value.weekdays.length || !newScheduleItem.value.dateRange) {
+        ElMessage.warning('请选择周几和日期范围')
+        return
+      }
+      
+      scheduleItems = generateWeeklySchedule()
+    } else if (newScheduleItem.value.addMode === 'dateRange') {
+      // 日期范围模式
+      if (!newScheduleItem.value.selectedDates.length) {
+        ElMessage.warning('请选择日期')
+        return
+      }
+      
+      scheduleItems = newScheduleItem.value.selectedDates.map(date => ({
+        courseId: newScheduleItem.value.courseId,
+        date: date,
+        startTime: formatTime(newScheduleItem.value.startTime)
+      }))
     }
     
-    // 添加更多调试信息
-    console.log('发送到后端的训练计划数据:', scheduleItemData)
-    const user = JSON.parse(localStorage.getItem('user'))
-    console.log('当前用户认证状态:', user ? '已登录' : '未登录')
-    console.log('用户Token:', user?.token ? '已设置' : '未设置')
-    
-    // 调用API添加训练计划
-    const response = await TrainingService.addScheduleItem(scheduleItemData)
-    
-    // 构造新的计划项
-    console.log('添加训练计划成功，返回数据:', response.data)
-    const newItem = {
-      id: response.data.id,
-      courseId: newScheduleItem.value.courseId,
-      courseName: course.title,
-      startTime: formatTime(newScheduleItem.value.startTime),
-      completed: false
+    if (scheduleItems.length === 0) {
+      ElMessage.warning('没有生成任何训练计划')
+      return
     }
     
-    // 更新本地数据
-    const key = formatDateKey(selectedDate.value)
-    if (!scheduleData.value[key]) {
-      scheduleData.value[key] = []
+    // 批量添加训练计划
+    const batchRequest = {
+      schedules: scheduleItems
     }
-    scheduleData.value[key].push(newItem)
     
-    // 更新当天计划
-    loadDailySchedule()
+    console.log('发送批量添加请求:', batchRequest)
+    const response = await TrainingService.addBatchScheduleItems(batchRequest)
     
-    ElMessage.success('课程已添加到训练计划')
+    console.log('批量添加成功，返回数据:', response.data)
+    
+    ElMessage.success(`成功添加 ${response.data.length} 个训练计划`)
     addCourseDialogVisible.value = false
+    
+    // 刷新数据
+    await loadScheduleData()
+    
   } catch (error) {
     console.error('添加训练计划失败:', error)
     
-    // 显示更详细的错误信息
     if (error.response) {
       console.error('错误状态码:', error.response.status)
       console.error('错误数据:', error.response.data)
@@ -462,12 +728,40 @@ const addCourseToSchedule = async () => {
     } else {
       ElMessage.error('添加失败，网络连接错误')
     }
+  }
+}
+
+// 生成按周重复的训练计划
+const generateWeeklySchedule = () => {
+  const scheduleItems = []
+  const [startDate, endDate] = newScheduleItem.value.dateRange
+  
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  const current = new Date(start)
+  
+  while (current <= end) {
+    const dayOfWeek = current.getDay() // 0=周日, 1=周一, ..., 6=周六
+    
+    if (newScheduleItem.value.weekdays.includes(String(dayOfWeek))) {
+      scheduleItems.push({
+        courseId: newScheduleItem.value.courseId,
+        date: formatDateKey(current),
+        startTime: formatTime(newScheduleItem.value.startTime)
+      })
     }
+    
+    // 移动到下一天
+    current.setDate(current.getDate() + 1)
+  }
+  
+  return scheduleItems
 }
 
 onMounted(() => {
   loadEnrolledCourses()
   loadScheduleData()
+  loadTrainingStatistics()
 })
 </script>
 
@@ -667,4 +961,43 @@ onMounted(() => {
 .add-course-form {
   margin-top: 20px;
 }
-</style> 
+
+/* 训练统计样式 */
+.training-statistics {
+  margin-top: 30px;
+  padding: 20px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  background-color: #fafafa;
+}
+
+.training-statistics h3 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  text-align: center;
+  color: #333;
+}
+
+.chart-container {
+  margin-bottom: 30px;
+}
+
+.chart-container h4 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+}
+
+.chart {
+  width: 100%;
+  height: 300px;
+}
+
+/* 日训练时长显示样式 */
+.daily-duration {
+  font-size: 14px;
+  color: #409eff;
+  font-weight: bold;
+}
+</style>

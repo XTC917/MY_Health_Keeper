@@ -8,11 +8,15 @@
  */
 package com.healthkeeper.service.impl;
 
+import com.healthkeeper.dto.BatchTrainingScheduleRequest;
 import com.healthkeeper.dto.TrainingScheduleDto;
 import com.healthkeeper.dto.TrainingScheduleRequest;
+import com.healthkeeper.dto.TrainingStatisticsResponse;
 import com.healthkeeper.entity.Course;
+import com.healthkeeper.entity.CourseProgress;
 import com.healthkeeper.entity.TrainingSchedule;
 import com.healthkeeper.entity.User;
+import com.healthkeeper.repository.CourseProgressRepository;
 import com.healthkeeper.repository.CourseRepository;
 import com.healthkeeper.repository.TrainingScheduleRepository;
 import com.healthkeeper.security.SecurityUtil;
@@ -23,19 +27,23 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.HashMap;
+import java.time.temporal.WeekFields;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class TrainingScheduleServiceImpl implements TrainingScheduleService {    private final TrainingScheduleRepository trainingScheduleRepository;
+public class TrainingScheduleServiceImpl implements TrainingScheduleService {    
+    private final TrainingScheduleRepository trainingScheduleRepository;
     private final CourseRepository courseRepository;
+    private final CourseProgressRepository courseProgressRepository;
     private final SecurityUtil securityUtil;
     
     // 使用灵活的日期格式，能同时处理yyyy-M-d和yyyy-MM-dd格式
@@ -74,21 +82,22 @@ public class TrainingScheduleServiceImpl implements TrainingScheduleService {   
                 System.out.println("使用格式 " + formatter + " 解析失败: " + e.getMessage());
             }
         }
-        
-        // 如果上面的方法都失败了，尝试手动解析 yyyy-M-d 格式
-        try {
-            String[] parts = dateString.split("-");
-            if (parts.length == 3) {
-                int year = Integer.parseInt(parts[0]);
-                int month = Integer.parseInt(parts[1]);
-                int day = Integer.parseInt(parts[2]);
-                
-                LocalDate date = LocalDate.of(year, month, day);
-                System.out.println("手动解析日期成功: " + date);
-                return date;
+          // 如果上面的方法都失败了，尝试手动解析 yyyy-M-d 格式
+        if (dateString != null) {
+            try {
+                String[] parts = dateString.split("-");
+                if (parts.length == 3) {
+                    int year = Integer.parseInt(parts[0]);
+                    int month = Integer.parseInt(parts[1]);
+                    int day = Integer.parseInt(parts[2]);
+                    
+                    LocalDate date = LocalDate.of(year, month, day);
+                    System.out.println("手动解析日期成功: " + date);
+                    return date;
+                }
+            } catch (Exception e) {
+                System.out.println("手动解析日期失败: " + e.getMessage());
             }
-        } catch (Exception e) {
-            System.out.println("手动解析日期失败: " + e.getMessage());
         }
         
         throw new RuntimeException("无法解析日期: " + dateString + "，请使用格式 yyyy-MM-dd");
@@ -217,12 +226,116 @@ public class TrainingScheduleServiceImpl implements TrainingScheduleService {   
             
             TrainingSchedule savedSchedule = trainingScheduleRepository.save(schedule);
             System.out.println("保存成功，ID: " + savedSchedule.getId());
-            
-            return convertToDto(savedSchedule);
+              return convertToDto(savedSchedule);
         } catch (Exception e) {
             System.err.println("添加训练计划失败: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("添加训练计划失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public List<TrainingScheduleDto> addBatchScheduleItems(BatchTrainingScheduleRequest request) {
+        try {
+            System.out.println("接收到批量添加训练计划请求: " + request);
+            
+            if (request.getSchedules() == null || request.getSchedules().isEmpty()) {
+                throw new RuntimeException("批量添加请求中没有训练计划项");
+            }
+            
+            // 获取当前用户
+            User currentUser;
+            try {
+                currentUser = securityUtil.getCurrentUser();
+                System.out.println("当前用户ID: " + currentUser.getId());
+            } catch (Exception e) {
+                System.err.println("获取当前用户失败: " + e.getMessage());
+                throw new RuntimeException("用户认证失败或会话已过期，请重新登录", e);
+            }
+            
+            List<TrainingScheduleDto> results = new ArrayList<>();
+            LocalDate today = LocalDate.now();
+            
+            // 处理每个训练计划项
+            for (TrainingScheduleRequest scheduleRequest : request.getSchedules()) {
+                try {
+                    System.out.println("处理训练计划项: " + scheduleRequest);
+                    
+                    // 查找课程
+                    Course course;
+                    try {
+                        Long courseId = scheduleRequest.getCourseId();
+                        if (courseId == null) {
+                            throw new RuntimeException("课程ID不能为空");
+                        }
+                        
+                        course = courseRepository.findById(courseId)
+                                .orElseThrow(() -> new RuntimeException("课程不存在，ID: " + courseId));
+                        System.out.println("找到课程: " + course.getTitle());
+                    } catch (Exception e) {
+                        System.err.println("查找课程失败: " + e.getMessage());
+                        throw new RuntimeException("无法找到指定课程: " + e.getMessage(), e);
+                    }
+                    
+                    // 解析日期和时间
+                    LocalDate date;
+                    LocalTime startTime;
+                    try {
+                        date = parseDate(scheduleRequest.getDate());
+                        startTime = LocalTime.parse(scheduleRequest.getStartTime(), TIME_FORMATTER);
+                        System.out.println("解析后的日期: " + date + ", 时间: " + startTime);
+                    } catch (Exception e) {
+                        System.err.println("解析日期或时间失败: " + e.getMessage());
+                        throw new RuntimeException("日期或时间格式不正确", e);
+                    }
+                    
+                    // 检查是否已存在相同的训练计划
+                    List<TrainingSchedule> existingSchedules = trainingScheduleRepository
+                            .findByUserAndDate(currentUser, date);
+                    
+                    boolean isDuplicate = existingSchedules.stream()
+                            .anyMatch(s -> s.getCourse().getId().equals(course.getId()) && 
+                                         s.getStartTime().equals(startTime));
+                    
+                    if (isDuplicate) {
+                        System.out.println("跳过重复的训练计划: " + date + " " + startTime + " " + course.getTitle());
+                        continue; // 跳过重复的计划
+                    }
+                    
+                    // 创建训练计划对象
+                    TrainingSchedule schedule = TrainingSchedule.builder()
+                            .user(currentUser)
+                            .course(course)
+                            .date(date)
+                            .dateOriginal(date)
+                            .startTime(startTime)
+                            .completed(false)
+                            .createdAt(today)
+                            .updatedAt(today)
+                            .build();
+                    
+                    // 保存训练计划
+                    TrainingSchedule savedSchedule = trainingScheduleRepository.save(schedule);
+                    System.out.println("保存成功，ID: " + savedSchedule.getId());
+                    
+                    // 转换为DTO并添加到结果列表
+                    results.add(convertToDto(savedSchedule));
+                    
+                } catch (Exception e) {
+                    System.err.println("处理单个训练计划项失败: " + e.getMessage());
+                    // 继续处理下一个项目，而不是中断整个批量操作
+                    // 可以选择记录错误但继续处理其他项目
+                }
+            }
+            
+            System.out.println("批量添加完成，成功添加 " + results.size() + " 个训练计划");
+            return results;
+            
+        } catch (Exception e) {
+            System.err.println("批量添加训练计划失败: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("批量添加训练计划失败: " + e.getMessage(), e);
         }
     }
 
@@ -313,6 +426,124 @@ public class TrainingScheduleServiceImpl implements TrainingScheduleService {   
         return convertToDto(updatedSchedule);
     }
     
+    @Override
+    public TrainingStatisticsResponse getTrainingStatistics() {
+        User currentUser = securityUtil.getCurrentUser();
+        LocalDate today = LocalDate.now();
+        
+        // 今日训练时长
+        TrainingStatisticsResponse.DailyTrainingTime todayTraining = getDailyTrainingTime(today, currentUser);
+        
+        // 近7天每日训练时长
+        List<TrainingStatisticsResponse.DailyTrainingTime> last7Days = new ArrayList<>();
+        for (int i = 6; i >= 0; i--) {
+            LocalDate date = today.minusDays(i);
+            last7Days.add(getDailyTrainingTime(date, currentUser));
+        }
+        
+        // 近12周每周训练时长
+        List<TrainingStatisticsResponse.WeeklyTrainingTime> last12Weeks = new ArrayList<>();
+        for (int i = 11; i >= 0; i--) {
+            LocalDate weekStart = today.minusWeeks(i).with(WeekFields.of(Locale.getDefault()).dayOfWeek(), 1);
+            LocalDate weekEnd = weekStart.plusDays(6);
+            last12Weeks.add(getWeeklyTrainingTime(weekStart, weekEnd, currentUser));
+        }
+        
+        // 近12个月每月训练时长
+        List<TrainingStatisticsResponse.MonthlyTrainingTime> last12Months = new ArrayList<>();
+        for (int i = 11; i >= 0; i--) {
+            LocalDate monthStart = today.minusMonths(i).withDayOfMonth(1);
+            LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
+            last12Months.add(getMonthlyTrainingTime(monthStart, monthEnd, currentUser));
+        }
+        
+        return TrainingStatisticsResponse.builder()
+                .todayTraining(todayTraining)
+                .last7Days(last7Days)
+                .last12Weeks(last12Weeks)
+                .last12Months(last12Months)
+                .build();
+    }
+    
+    @Override
+    public Integer getDailyTrainingDuration(LocalDate date) {
+        User currentUser = securityUtil.getCurrentUser();
+        TrainingStatisticsResponse.DailyTrainingTime dailyTime = getDailyTrainingTime(date, currentUser);
+        return dailyTime.getTotalMinutes();
+    }
+      private TrainingStatisticsResponse.DailyTrainingTime getDailyTrainingTime(LocalDate date, User user) {
+        // 获取当日已完成的课程训练时长
+        List<TrainingSchedule> completedSchedules = trainingScheduleRepository
+                .findByUserAndDateAndCompleted(user, date, true);
+        
+        int courseMinutes = completedSchedules.stream()
+                .mapToInt(schedule -> {
+                    Course course = schedule.getCourse();
+                    return course.getDuration() != null ? course.getDuration() : 0;
+                })
+                .sum();
+        
+        // 获取当日自定义训练时长（从CourseProgress中获取）
+        LocalDateTime dayStart = date.atStartOfDay();
+        LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
+        
+        List<CourseProgress> dayProgress = courseProgressRepository
+                .findByUserIdAndLastAccessedAtBetween(user.getId(), dayStart, dayEnd);
+        
+        int customTrainingMinutes = dayProgress.stream()
+                .mapToInt(progress -> progress.getTotalTimeSpent() != null ? progress.getTotalTimeSpent() : 0)
+                .sum();
+        
+        return TrainingStatisticsResponse.DailyTrainingTime.builder()
+                .date(date)
+                .courseMinutes(courseMinutes)
+                .customTrainingMinutes(customTrainingMinutes)
+                .totalMinutes(courseMinutes + customTrainingMinutes)
+                .build();
+    }
+    
+    private TrainingStatisticsResponse.WeeklyTrainingTime getWeeklyTrainingTime(LocalDate weekStart, LocalDate weekEnd, User user) {
+        int courseMinutes = 0;
+        int customTrainingMinutes = 0;
+        
+        for (LocalDate date = weekStart; !date.isAfter(weekEnd); date = date.plusDays(1)) {
+            TrainingStatisticsResponse.DailyTrainingTime dailyTime = getDailyTrainingTime(date, user);
+            courseMinutes += dailyTime.getCourseMinutes();
+            customTrainingMinutes += dailyTime.getCustomTrainingMinutes();
+        }
+        
+        String weekLabel = String.format("%d-W%02d", 
+                weekStart.getYear(), 
+                weekStart.get(WeekFields.of(Locale.getDefault()).weekOfYear()));
+        
+        return TrainingStatisticsResponse.WeeklyTrainingTime.builder()
+                .week(weekLabel)
+                .courseMinutes(courseMinutes)
+                .customTrainingMinutes(customTrainingMinutes)
+                .totalMinutes(courseMinutes + customTrainingMinutes)
+                .build();
+    }
+    
+    private TrainingStatisticsResponse.MonthlyTrainingTime getMonthlyTrainingTime(LocalDate monthStart, LocalDate monthEnd, User user) {
+        int courseMinutes = 0;
+        int customTrainingMinutes = 0;
+        
+        for (LocalDate date = monthStart; !date.isAfter(monthEnd); date = date.plusDays(1)) {
+            TrainingStatisticsResponse.DailyTrainingTime dailyTime = getDailyTrainingTime(date, user);
+            courseMinutes += dailyTime.getCourseMinutes();
+            customTrainingMinutes += dailyTime.getCustomTrainingMinutes();
+        }
+        
+        String monthLabel = String.format("%d-%02d", monthStart.getYear(), monthStart.getMonthValue());
+        
+        return TrainingStatisticsResponse.MonthlyTrainingTime.builder()
+                .month(monthLabel)
+                .courseMinutes(courseMinutes)
+                .customTrainingMinutes(customTrainingMinutes)
+                .totalMinutes(courseMinutes + customTrainingMinutes)
+                .build();
+    }
+
     private TrainingScheduleDto convertToDto(TrainingSchedule schedule) {
         return TrainingScheduleDto.builder()
                 .id(schedule.getId())

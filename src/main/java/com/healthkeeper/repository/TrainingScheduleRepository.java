@@ -30,4 +30,7 @@ public interface TrainingScheduleRepository extends JpaRepository<TrainingSchedu
     
     // 根据用户和课程ID查找训练计划
     List<TrainingSchedule> findByUserAndCourse_Id(User user, Long courseId);
+
+     // 查找用户特定日期已完成的训练计划Add commentMore actions
+    List<TrainingSchedule> findByUserAndDateAndCompleted(User user, LocalDate date, boolean completed);
 } 

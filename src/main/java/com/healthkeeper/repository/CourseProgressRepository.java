@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,4 +36,7 @@ public interface CourseProgressRepository extends JpaRepository<CourseProgress, 
     Page<CourseProgress> findByUserId(Long userId, Pageable pageable);
 
     Optional<CourseProgress> findByUserIdAndCourseIdAndChapterIdAndContentId(Long userId, Long courseId, Long chapterId, Long contentId);
+
+    // 查找用户在特定时间范围内的课程进度
+    List<CourseProgress> findByUserIdAndLastAccessedAtBetween(Long userId, LocalDateTime startTime, LocalDateTime endTime);
 }

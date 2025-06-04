@@ -8,9 +8,12 @@
  */
 package com.healthkeeper.service;
 
+import com.healthkeeper.dto.BatchTrainingScheduleRequest;
 import com.healthkeeper.dto.TrainingScheduleDto;
 import com.healthkeeper.dto.TrainingScheduleRequest;
+import com.healthkeeper.dto.TrainingStatisticsResponse;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -21,9 +24,11 @@ public interface TrainingScheduleService {
     
     // 获取指定日期的训练计划
     List<TrainingScheduleDto> getDailySchedule(String date);
-    
-    // 添加训练计划项
+      // 添加训练计划项
     TrainingScheduleDto addScheduleItem(TrainingScheduleRequest request);
+    
+    // 批量添加训练计划项
+    List<TrainingScheduleDto> addBatchScheduleItems(BatchTrainingScheduleRequest request);
     
     // 更新训练计划项
     TrainingScheduleDto updateScheduleItem(Long itemId, TrainingScheduleRequest request);
@@ -36,4 +41,10 @@ public interface TrainingScheduleService {
     
     // 标记训练计划项为已完成/未完成
     TrainingScheduleDto updateCompletionStatus(Long itemId, boolean completed);
-} 
+    
+    // 获取训练统计数据
+    TrainingStatisticsResponse getTrainingStatistics();
+    
+    // 获取指定日期的训练时长
+    Integer getDailyTrainingDuration(LocalDate date);
+}

@@ -20,10 +20,14 @@ class TrainingService {
   getDailySchedule(date) {
     return api.get(`/training/schedule/${date}`)
   }
-
   // 添加训练计划项
   addScheduleItem(scheduleData) {
     return api.post('/training/schedule', scheduleData)
+  }
+
+  // 批量添加训练计划项
+  addBatchScheduleItems(batchData) {
+    return api.post('/training/schedule/batch', batchData)
   }
 
   // 更新训练计划项
@@ -55,6 +59,16 @@ class TrainingService {
   markAsIncomplete(itemId) {
     return api.put(`/training/schedule/item/${itemId}/complete`, { completed: false })
   }
+  
+  // 获取训练统计数据
+  getTrainingStatistics() {
+    return api.get('/training/statistics')
+  }
+  
+  // 获取指定日期的训练时长
+  getDailyTrainingDuration(date) {
+    return api.get(`/training/daily-duration/${date}`)
+  }
 }
 
-export default new TrainingService() 
+export default new TrainingService()

@@ -13,6 +13,12 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
+// AI-Assisted: This service implements AI-powered features for:
+// 1. Smart product recommendations based on user behavior and preferences
+// 2. Dynamic pricing optimization
+// 3. Inventory prediction and management
+// 4. Personalized product search and filtering
+
 @Service
 public class ProductService {
     @Autowired

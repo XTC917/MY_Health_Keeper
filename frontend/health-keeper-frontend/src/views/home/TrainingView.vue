@@ -186,7 +186,7 @@ import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 import CourseService from '../../api/course'
-import TrainingService from '../../api/training'
+// import TrainingService from '../../api/training'
 
 const router = useRouter()
 

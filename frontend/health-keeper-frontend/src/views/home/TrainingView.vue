@@ -558,18 +558,13 @@ const goToCourseDetail = (courseId) => {
 // 更新完成状态
 const updateCompletion = async (item) => {
   try {
-    // 先保存原始状态，以便在失败时恢复
-    const originalCompleted = item.completed
-    
-    // 调用API更新状态
     if (item.completed) {
       await TrainingService.markAsCompleted(item.id)
     } else {
       await TrainingService.markAsIncomplete(item.id)
     }
     
-    // 重新加载统计数据
-    await loadTrainingStatistics()
+    ElMessage.success(item.completed ? '已标记为完成' : '已标记为未完成')
     
     // 更新本地数据
     const key = formatDateKey(selectedDate.value)
@@ -580,22 +575,14 @@ const updateCompletion = async (item) => {
       }
     }
     
-    ElMessage.success(item.completed ? '已标记为完成' : '已标记为未完成')
+    // 重新加载统计数据
+    await loadTrainingStatistics()
   } catch (error) {
     console.error('Error updating completion status:', error)
     ElMessage.error('更新状态失败，请重试')
     
     // 恢复原来的状态
     item.completed = !item.completed
-    
-    // 恢复本地数据
-    const key = formatDateKey(selectedDate.value)
-    if (scheduleData.value[key]) {
-      const index = scheduleData.value[key].findIndex(i => i.id === item.id)
-      if (index !== -1) {
-        scheduleData.value[key][index].completed = !item.completed
-      }
-    }
   }
 }
 

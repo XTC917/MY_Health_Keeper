@@ -577,13 +577,6 @@ const updateCompletion = async (item) => {
     
     // 重新加载统计数据
     await loadTrainingStatistics()
-    
-    // 立即更新今日训练时长
-    const today = formatDateKey(new Date())
-    if (key === today) {
-      const response = await TrainingService.getDailyTrainingDuration(today)
-      todayDuration.value = response.data
-    }
   } catch (error) {
     console.error('Error updating completion status:', error)
     ElMessage.error('更新状态失败，请重试')

@@ -248,22 +248,25 @@ export default {
     const loadHistory = async () => {
       try {
         loading.value = true
-        const response = await HealthDataService.getHealthData(0, 100) // 获取前100条记录
-        console.log('API Response:', response) // 添加日志
+        const response = await HealthDataService.getHealthData(0, 100)
+        console.log('API Response:', response)
         
-        // 检查响应数据结构
+        // 处理响应数据
         if (response.data && response.data.content) {
-          // 如果返回的是分页数据
-          healthHistory.value = response.data.content
-        } else if (Array.isArray(response.data)) {
-          // 如果返回的是数组
-          healthHistory.value = response.data
+          // 提取健康数据，忽略嵌套的用户信息
+          healthHistory.value = response.data.content.map(item => ({
+            id: item.id,
+            height: item.height,
+            weight: item.weight,
+            bmi: item.bmi,
+            recordedAt: item.recordedAt
+          }))
         } else {
           console.error('Unexpected response format:', response.data)
           healthHistory.value = []
         }
         
-        console.log('Processed health history:', healthHistory.value) // 添加日志
+        console.log('Processed health history:', healthHistory.value)
         initCharts()
       } catch (error) {
         console.error('加载数据失败:', error)
@@ -308,18 +311,21 @@ export default {
       
       try {
         loading.value = true
-        console.log('Saving new data:', newData) // 添加日志
+        console.log('Saving new data:', newData)
         const response = await HealthDataService.addHealthData(newData)
-        console.log('Save response:', response) // 添加日志
+        console.log('Save response:', response)
         
-        // 重新加载数据
-        await loadHistory()
-        
-        editDialog.value.visible = false
-        ElMessage.success('数据保存成功')
+        if (response.data) {
+          // 重新加载数据
+          await loadHistory()
+          editDialog.value.visible = false
+          ElMessage.success('数据保存成功')
+        } else {
+          throw new Error('保存失败：服务器返回数据为空')
+        }
       } catch (error) {
         console.error('保存数据失败:', error)
-        ElMessage.error('保存数据失败，请重试')
+        ElMessage.error(error.message || '保存数据失败，请重试')
       } finally {
         loading.value = false
       }

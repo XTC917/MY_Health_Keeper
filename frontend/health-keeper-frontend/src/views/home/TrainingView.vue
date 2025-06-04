@@ -28,7 +28,7 @@
           
           <div class="schedule-list" v-if="dailySchedule.length > 0">
             <div v-for="(item, index) in dailySchedule" :key="index" class="schedule-item">
-          <div class="course-info">
+              <div class="course-info">
                 <div class="course-time">{{ formatTime(item.startTime) }}</div>
                 <div class="course-name" @click="goToCourseDetail(item.courseId)">
                   {{ item.courseName }}
@@ -37,6 +37,15 @@
               </div>
               <div class="course-actions">
                 <el-checkbox v-model="item.completed" @change="updateCompletion(item)"></el-checkbox>
+                <el-button 
+                  type="danger" 
+                  size="small" 
+                  circle 
+                  @click="deleteScheduleItem(item)"
+                  class="delete-btn"
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
               </div>
             </div>
           </div>
@@ -181,12 +190,11 @@
 
 <script setup>
 import { ref, computed, onMounted, nextTick, onUnmounted } from 'vue'
-import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ArrowLeft, ArrowRight, Delete } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 import CourseService from '../../api/course'
-// import TrainingService from '../../api/training'
 
 const router = useRouter()
 
@@ -794,6 +802,39 @@ const saveScheduleData = () => {
   localStorage.setItem('scheduleData', JSON.stringify(scheduleData.value))
 }
 
+// 删除训练计划项
+const deleteScheduleItem = (item) => {
+  ElMessageBox.confirm(
+    '确定要删除这个训练任务吗？',
+    '删除确认',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(() => {
+    const key = formatDateKey(selectedDate.value)
+    if (scheduleData.value[key]) {
+      // 从数组中删除该项
+      const index = scheduleData.value[key].findIndex(i => i.id === item.id)
+      if (index !== -1) {
+        // 如果任务已完成，需要更新训练统计
+        if (item.completed) {
+          updateTrainingStatistics(item, false)
+        }
+        scheduleData.value[key].splice(index, 1)
+        // 更新当天计划显示
+        dailySchedule.value = scheduleData.value[key]
+        // 保存到localStorage
+        saveScheduleData()
+        ElMessage.success('训练任务已删除')
+      }
+    }
+  }).catch(() => {
+    // 用户取消删除
+  })
+}
+
 // 在组件卸载时保存数据
 onUnmounted(() => {
   saveScheduleData()
@@ -1041,5 +1082,19 @@ onMounted(() => {
   font-size: 14px;
   color: #409eff;
   font-weight: bold;
+}
+
+.course-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.delete-btn {
+  padding: 4px;
+}
+
+.delete-btn .el-icon {
+  font-size: 14px;
 }
 </style>

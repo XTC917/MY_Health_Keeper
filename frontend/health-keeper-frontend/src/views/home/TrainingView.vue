@@ -180,7 +180,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, onUnmounted } from 'vue'
 import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
@@ -470,41 +470,21 @@ const loadEnrolledCourses = async () => {
 }
 
 // 加载训练计划数据
-const loadScheduleData = async () => {
-  try {
-    // 调用API获取训练计划数据
-    const response = await TrainingService.getUserSchedule()
-    
-    // 后端返回的数据可能需要转换格式
-    const data = response.data || {}
-    scheduleData.value = data
-    
-    // 加载当天的训练计划
-    loadDailySchedule()
-  } catch (error) {
-    console.error('Error loading schedule data:', error)
-    // API调用失败，使用空对象
-    scheduleData.value = {}
-    ElMessage.error('加载训练计划失败，请刷新页面重试')
-    
-    // 加载当天的训练计划
-    loadDailySchedule()
+const loadScheduleData = () => {
+  // 从localStorage加载数据
+  const storedData = localStorage.getItem('scheduleData')
+  if (storedData) {
+    scheduleData.value = JSON.parse(storedData)
   }
+  
+  // 加载当天的训练计划
+  loadDailySchedule()
 }
 
 // 加载当天的训练计划
-const loadDailySchedule = async () => {
+const loadDailySchedule = () => {
   const key = formatDateKey(selectedDate.value)
-  
-  try {
-    // 尝试从API获取特定日期的训练计划
-    const response = await TrainingService.getDailySchedule(key)
-    dailySchedule.value = response.data || []
-  } catch (error) {
-    console.error('Error loading daily schedule:', error)
-    // 如果API调用失败，使用本地数据
-    dailySchedule.value = scheduleData.value[key] || []
-  }
+  dailySchedule.value = scheduleData.value[key] || []
 }
 
 // 加载训练统计数据
@@ -701,21 +681,9 @@ const addCourseToSchedule = async () => {
     let scheduleItems = []
     
     if (newScheduleItem.value.addMode === 'single') {
-      // 单次添加模式 - 使用原有的单个添加API
-      const scheduleItemData = {
-        courseId: newScheduleItem.value.courseId,
-        date: formatDateKey(selectedDate.value),
-        startTime: formatTime(newScheduleItem.value.startTime)
-      }
-      
-      console.log('发送单个添加请求:', scheduleItemData)
-      const response = await TrainingService.addScheduleItem(scheduleItemData)
-      
-      console.log('添加训练计划成功，返回数据:', response.data)
-      
-      // 构造新的计划项
+      // 单次添加模式
       const newItem = {
-        id: response.data.id,
+        id: Date.now(), // 使用时间戳作为临时ID
         courseId: newScheduleItem.value.courseId,
         courseName: course.title,
         startTime: formatTime(newScheduleItem.value.startTime),
@@ -730,7 +698,7 @@ const addCourseToSchedule = async () => {
       scheduleData.value[key].push(newItem)
       
       // 更新当天计划
-      loadDailySchedule()
+      dailySchedule.value = scheduleData.value[key]
       
       ElMessage.success('课程已添加到训练计划')
       addCourseDialogVisible.value = false
@@ -766,41 +734,31 @@ const addCourseToSchedule = async () => {
     }
     
     // 批量添加训练计划
-    const batchRequest = {
-      schedules: scheduleItems
-    }
+    scheduleItems.forEach(item => {
+      const newItem = {
+        id: Date.now() + Math.random(), // 使用时间戳加随机数作为临时ID
+        courseId: item.courseId,
+        courseName: course.title,
+        startTime: item.startTime,
+        completed: false
+      }
+      
+      const key = item.date
+      if (!scheduleData.value[key]) {
+        scheduleData.value[key] = []
+      }
+      scheduleData.value[key].push(newItem)
+    })
     
-    console.log('发送批量添加请求:', batchRequest)
-    const response = await TrainingService.addBatchScheduleItems(batchRequest)
-    
-    console.log('批量添加成功，返回数据:', response.data)
-    
-    ElMessage.success(`成功添加 ${response.data.length} 个训练计划`)
+    ElMessage.success(`成功添加 ${scheduleItems.length} 个训练计划`)
     addCourseDialogVisible.value = false
     
     // 刷新数据
-    await loadScheduleData()
+    loadDailySchedule()
     
   } catch (error) {
     console.error('添加训练计划失败:', error)
-    
-    if (error.response) {
-      console.error('错误状态码:', error.response.status)
-      console.error('错误数据:', error.response.data)
-      
-      let errorMessage = '添加失败'
-      if (error.response.data && error.response.data.message) {
-        errorMessage = error.response.data.message
-      } else if (error.response.status === 401) {
-        errorMessage = '用户未登录或会话已过期，请重新登录'
-      } else if (error.response.status === 500) {
-        errorMessage = '服务器内部错误，请联系管理员'
-      }
-      
-      ElMessage.error(errorMessage)
-    } else {
-      ElMessage.error('添加失败，网络连接错误')
-    }
+    ElMessage.error('添加失败，请重试')
   }
 }
 
@@ -830,6 +788,17 @@ const generateWeeklySchedule = () => {
   
   return scheduleItems
 }
+
+// 保存训练计划数据
+const saveScheduleData = () => {
+  localStorage.setItem('scheduleData', JSON.stringify(scheduleData.value))
+}
+
+// 在组件卸载时保存数据
+onUnmounted(() => {
+  saveScheduleData()
+  saveTrainingDataToStorage()
+})
 
 onMounted(() => {
   loadEnrolledCourses()

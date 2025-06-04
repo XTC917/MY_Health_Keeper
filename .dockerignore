@@ -1,0 +1,22 @@
+# Git
+.git
+.gitignore
+
+# Maven
+target/
+!target/*.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Node
+node_modules/
+frontend/
+
+# Other
+*.md
+!README.md
+uploads/
+temp/ 

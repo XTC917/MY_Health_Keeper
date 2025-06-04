@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_ADDRESS=${SERVER_ADDRESS:-http://localhost:8081}
+    volumes:
+      - ./uploads:/app/uploads
+    restart: unless-stopped 

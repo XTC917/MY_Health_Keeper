@@ -23,6 +23,9 @@
                 <p><i class="el-icon-time"></i> 时长：{{ course.duration }}分钟</p>
                 <p><i class="el-icon-user"></i> 目标人群：{{ course.targetAudience }}</p>
                 <p class="description">{{ course.description }}</p>
+                <div class="course-tags" v-if="course.category">
+                  <el-tag size="small" type="success">{{ course.category }}</el-tag>
+                </div>
               </div>
               <div class="course-actions">
                 <el-button 
@@ -226,5 +229,11 @@ onMounted(() => {
 .is-joined {
   background-color: #67c23a;
   border-color: #67c23a;
+}
+
+.course-tags {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
 }
 </style> 

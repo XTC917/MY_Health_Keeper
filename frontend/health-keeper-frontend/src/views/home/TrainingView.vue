@@ -356,12 +356,105 @@ const dailySchedule = ref([])
 const scheduleData = ref({}) // 存储所有训练计划数据 { '2023-5-1': [{...}] }
 
 // 训练统计相关数据
-const trainingStatistics = ref(null)
+const trainingStatistics = ref({
+  todayTraining: { totalMinutes: 0 },
+  last12Weeks: [],
+  last12Months: []
+})
 const todayDuration = ref(0)
 const weeklyChart = ref(null)
 const monthlyChart = ref(null)
 let weeklyChartInstance = null
 let monthlyChartInstance = null
+
+// 从localStorage加载训练统计数据
+const loadTrainingDataFromStorage = () => {
+  const storedData = localStorage.getItem('trainingStatistics')
+  if (storedData) {
+    trainingStatistics.value = JSON.parse(storedData)
+    todayDuration.value = trainingStatistics.value.todayTraining.totalMinutes
+  }
+}
+
+// 保存训练统计数据到localStorage
+const saveTrainingDataToStorage = () => {
+  localStorage.setItem('trainingStatistics', JSON.stringify(trainingStatistics.value))
+}
+
+// 初始化训练统计数据
+const initTrainingStatistics = () => {
+  const today = new Date()
+  const last12Weeks = []
+  const last12Months = []
+
+  // 生成近12周的数据
+  for (let i = 11; i >= 0; i--) {
+    const weekStart = new Date(today)
+    weekStart.setDate(today.getDate() - (today.getDay() + 7 * i))
+    const weekEnd = new Date(weekStart)
+    weekEnd.setDate(weekStart.getDate() + 6)
+    
+    last12Weeks.push({
+      week: `第${12-i}周`,
+      totalMinutes: 0
+    })
+  }
+
+  // 生成近12个月的数据
+  for (let i = 11; i >= 0; i--) {
+    const month = new Date(today.getFullYear(), today.getMonth() - i, 1)
+    last12Months.push({
+      month: `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`,
+      totalMinutes: 0
+    })
+  }
+
+  trainingStatistics.value = {
+    todayTraining: { totalMinutes: 0 },
+    last12Weeks,
+    last12Months
+  }
+}
+
+// 更新训练时长统计
+const updateTrainingStatistics = (item, isCompleted) => {
+  const today = new Date()
+  const todayKey = formatDateKey(today)
+  
+  // 更新今日训练时长
+  if (isCompleted) {
+    trainingStatistics.value.todayTraining.totalMinutes += 30 // 假设每个训练项目30分钟
+  } else {
+    trainingStatistics.value.todayTraining.totalMinutes = Math.max(0, trainingStatistics.value.todayTraining.totalMinutes - 30)
+  }
+  todayDuration.value = trainingStatistics.value.todayTraining.totalMinutes
+
+  // 更新周统计
+  const weekIndex = Math.floor((today.getDay() + 6) / 7) // 获取当前是第几周
+  if (weekIndex < 12) {
+    if (isCompleted) {
+      trainingStatistics.value.last12Weeks[weekIndex].totalMinutes += 30
+    } else {
+      trainingStatistics.value.last12Weeks[weekIndex].totalMinutes = Math.max(0, trainingStatistics.value.last12Weeks[weekIndex].totalMinutes - 30)
+    }
+  }
+
+  // 更新月统计
+  const monthIndex = today.getMonth()
+  if (monthIndex < 12) {
+    if (isCompleted) {
+      trainingStatistics.value.last12Months[monthIndex].totalMinutes += 30
+    } else {
+      trainingStatistics.value.last12Months[monthIndex].totalMinutes = Math.max(0, trainingStatistics.value.last12Months[monthIndex].totalMinutes - 30)
+    }
+  }
+
+  // 保存到localStorage
+  saveTrainingDataToStorage()
+  
+  // 更新图表
+  initCharts()
+}
 
 // 加载用户已加入的课程
 const loadEnrolledCourses = async () => {
@@ -416,23 +509,19 @@ const loadDailySchedule = async () => {
 }
 
 // 加载训练统计数据
-const loadTrainingStatistics = async () => {
-  try {
-    const response = await TrainingService.getTrainingStatistics()
-    trainingStatistics.value = response.data
-    
-    // 更新今日训练时长
-    if (trainingStatistics.value && trainingStatistics.value.todayTraining) {
-      todayDuration.value = trainingStatistics.value.todayTraining.totalMinutes
-    }
-    
-    // 创建图表
-    await nextTick()
-    initCharts()
-  } catch (error) {
-    console.error('Error loading training statistics:', error)
-    ElMessage.error('加载统计数据失败')
+const loadTrainingStatistics = () => {
+  // 从localStorage加载数据
+  loadTrainingDataFromStorage()
+  
+  // 如果没有数据，初始化新的统计数据
+  if (!trainingStatistics.value.last12Weeks.length) {
+    initTrainingStatistics()
   }
+  
+  // 创建图表
+  nextTick(() => {
+    initCharts()
+  })
 }
 
 // 初始化图表
@@ -549,14 +638,6 @@ const goToCourseDetail = (courseId) => {
 // 更新完成状态
 const updateCompletion = async (item) => {
   try {
-    if (item.completed) {
-      await TrainingService.markAsCompleted(item.id)
-    } else {
-      await TrainingService.markAsIncomplete(item.id)
-    }
-    
-    ElMessage.success(item.completed ? '已标记为完成' : '已标记为未完成')
-    
     // 更新本地数据
     const key = formatDateKey(selectedDate.value)
     if (scheduleData.value[key]) {
@@ -566,13 +647,10 @@ const updateCompletion = async (item) => {
       }
     }
     
-    // 重新加载统计数据
-    await loadTrainingStatistics()
+    // 更新训练统计
+    updateTrainingStatistics(item, item.completed)
     
-    // 更新今日训练时长
-    const today = formatDateKey(new Date())
-    const response = await TrainingService.getDailyTrainingDuration(today)
-    todayDuration.value = response.data || 0
+    ElMessage.success(item.completed ? '已标记为完成' : '已标记为未完成')
   } catch (error) {
     console.error('Error updating completion status:', error)
     ElMessage.error('更新状态失败，请重试')

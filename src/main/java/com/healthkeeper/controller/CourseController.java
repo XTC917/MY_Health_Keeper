@@ -314,6 +314,100 @@ public class CourseController {
         }
     }
 
+    @GetMapping("/filter")
+    public ResponseEntity<?> filterCourses(
+            @RequestParam(required = false) List<String> categories,
+            @RequestParam(required = false) List<String> levels,
+            @RequestParam(required = false) String query,
+            Authentication authentication) {
+        try {
+            List<Course> filteredCourses;
+            
+            // 根据筛选条件组合查询
+            if (categories != null && !categories.isEmpty() && levels != null && !levels.isEmpty()) {
+                // 同时按分类和难度筛选
+                filteredCourses = courseRepository.findByCategoryInAndLevelIn(categories, levels);
+            } else if (categories != null && !categories.isEmpty()) {
+                // 只按分类筛选
+                filteredCourses = courseRepository.findByCategoryIn(categories);
+            } else if (levels != null && !levels.isEmpty()) {
+                // 只按难度筛选
+                filteredCourses = courseRepository.findByLevelIn(levels);
+            } else {
+                // 无筛选条件，返回所有课程
+                filteredCourses = courseRepository.findAll();
+            }
+            
+            // 如果有搜索关键词，进行标题和分类的模糊搜索
+            if (query != null && !query.trim().isEmpty()) {
+                List<Course> titleResults = courseRepository.findByTitleContainingIgnoreCase(query);
+                List<Course> categoryResults = courseRepository.findByCategoryContainingIgnoreCase(query);
+                
+                Set<Course> uniqueResults = new HashSet<>();
+                uniqueResults.addAll(filteredCourses);
+                uniqueResults.addAll(titleResults);
+                uniqueResults.addAll(categoryResults);
+                
+                filteredCourses = new ArrayList<>(uniqueResults);
+            }
+            
+            // 处理每个课程，确保没有循环引用
+            List<Map<String, Object>> courseList = filteredCourses.stream().map(course -> {
+                Map<String, Object> courseMap = new HashMap<>();
+                courseMap.put("id", course.getId());
+                courseMap.put("title", course.getTitle());
+                courseMap.put("duration", course.getDuration());
+                courseMap.put("targetAudience", course.getTargetAudience());
+                courseMap.put("description", course.getDescription());
+                courseMap.put("price", course.getPrice());
+                courseMap.put("rating", course.getRating());
+                courseMap.put("totalStudents", course.getTotalStudents());
+                courseMap.put("status", course.getStatus());
+                courseMap.put("thumbnail", course.getThumbnail());
+                courseMap.put("videoUrl", course.getVideoUrl());
+                courseMap.put("level", course.getLevel());
+                courseMap.put("coverImage", course.getCoverImage());
+                courseMap.put("content", course.getContent());
+                courseMap.put("category", course.getCategory());
+                courseMap.put("createdAt", course.getCreatedAt());
+                courseMap.put("updatedAt", course.getUpdatedAt());
+                
+                // 处理创建者信息
+                if (course.getCreatorId() != null) {
+                    User user = userRepository.findById(course.getCreatorId()).orElse(null);
+                    if (user != null) {
+                        courseMap.put("author", user.getUsername());
+                    }
+                }
+                
+                // 如果用户已认证，检查是否已加入课程
+                if (authentication != null) {
+                    try {
+                        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+                        User user = userRepository.findById(userDetails.getId()).orElse(null);
+                        if (user != null) {
+                            courseMap.put("isEnrolled", user.getEnrolledCourses().contains(course));
+                        } else {
+                            courseMap.put("isEnrolled", false);
+                        }
+                    } catch (Exception e) {
+                        courseMap.put("isEnrolled", false);
+                    }
+                } else {
+                    courseMap.put("isEnrolled", false);
+                }
+                
+                return courseMap;
+            }).collect(Collectors.toList());
+            
+            return ResponseEntity.ok(courseList);
+        } catch (Exception e) {
+            System.err.println("Error in filterCourses: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error filtering courses: " + e.getMessage());
+        }
+    }
+
     @PostMapping("/{id}/enroll")
     @PreAuthorize("hasRole('USER')")
     @Transactional

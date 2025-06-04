@@ -8,9 +8,26 @@ class CourseService {
   }
 
   // 获取所有课程
-  getAllCourses(query = '') {
+  getAllCourses(query = '', categories = [], levels = []) {
     console.log('Fetching courses...');
-    const url = query ? `/courses/search?query=${encodeURIComponent(query)}` : '/courses/all';
+    let url = '/courses/filter';
+    const params = new URLSearchParams();
+    
+    if (query) {
+      params.append('query', query);
+    }
+    if (categories.length > 0) {
+      categories.forEach(category => params.append('categories', category));
+    }
+    if (levels.length > 0) {
+      levels.forEach(level => params.append('levels', level));
+    }
+    
+    const queryString = params.toString();
+    if (queryString) {
+      url += `?${queryString}`;
+    }
+    
     return api.get(url)
       .then(response => {
         console.log('Courses response:', response);

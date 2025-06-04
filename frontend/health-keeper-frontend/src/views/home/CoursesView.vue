@@ -17,15 +17,61 @@
       </div>
     </div>
 
+    <div class="filter-section">
+      <div class="filter-group">
+        <span class="filter-label">课程分类：</span>
+        <el-select
+          v-model="selectedCategories"
+          multiple
+          collapse-tags
+          collapse-tags-tooltip
+          placeholder="选择课程分类"
+          class="filter-select"
+          @change="handleFilterChange"
+        >
+          <el-option label="燃脂" value="燃脂" />
+          <el-option label="瘦腿" value="瘦腿" />
+          <el-option label="增肌" value="增肌" />
+          <el-option label="瑜伽" value="瑜伽" />
+          <el-option label="普拉提" value="普拉提" />
+          <el-option label="有氧" value="有氧" />
+          <el-option label="力量" value="力量" />
+          <el-option label="拉伸" value="拉伸" />
+          <el-option label="核心" value="核心" />
+          <el-option label="拳击" value="拳击" />
+          <el-option label="舞蹈" value="舞蹈" />
+          <el-option label="康复" value="康复" />
+        </el-select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">难度级别：</span>
+        <el-select
+          v-model="selectedLevels"
+          multiple
+          collapse-tags
+          collapse-tags-tooltip
+          placeholder="选择难度级别"
+          class="filter-select"
+          @change="handleFilterChange"
+        >
+          <el-option label="H1" value="H1" />
+          <el-option label="H2" value="H2" />
+          <el-option label="H3" value="H3" />
+          <el-option label="H4" value="H4" />
+          <el-option label="H5" value="H5" />
+        </el-select>
+      </div>
+    </div>
+
     <div class="content" v-loading="loading">
-      <div v-if="courses.length === 0" class="empty-state">
-        <el-empty description="暂无课程">
+      <div v-if="filteredCourses.length === 0" class="empty-state">
+        <el-empty description="暂无符合条件的课程">
           <el-button type="primary" @click="goToUpload">上传课程</el-button>
         </el-empty>
       </div>
       <div v-else class="course-list">
         <el-row :gutter="20">
-          <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="course in courses" :key="course.id">
+          <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="course in filteredCourses" :key="course.id">
             <el-card class="course-card">
               <template #header>
                 <div class="card-header">
@@ -34,10 +80,18 @@
               </template>
               <div class="course-info">
                 <p><i class="el-icon-time"></i> 时长：{{ course.duration }}分钟</p>
-                <p><i class="el-icon-user"></i> 目标人群：{{ course.targetAudience }}</p>
+                <p><i class="el-icon-star"></i> 难度：{{ course.level }}</p>
                 <p class="description">{{ course.description }}</p>
                 <div class="course-tags" v-if="course.category">
-                  <el-tag size="small" type="success">{{ course.category }}</el-tag>
+                  <el-tag 
+                    v-for="tag in course.category.split(',')" 
+                    :key="tag"
+                    size="small" 
+                    type="success"
+                    class="category-tag"
+                  >
+                    {{ tag }}
+                  </el-tag>
                 </div>
               </div>
               <div class="course-actions">
@@ -59,7 +113,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
@@ -69,14 +123,37 @@ const router = useRouter()
 const courses = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
+const selectedCategories = ref([])
+const selectedLevels = ref([])
 let searchTimeout = null
+
+// 过滤课程
+const filteredCourses = computed(() => {
+  return courses.value.filter(course => {
+    // 搜索关键词过滤
+    const matchesSearch = !searchQuery.value || 
+      course.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      course.description.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      course.category.toLowerCase().includes(searchQuery.value.toLowerCase())
+
+    // 分类过滤
+    const matchesCategories = selectedCategories.value.length === 0 || 
+      course.category.split(',').some(cat => selectedCategories.value.includes(cat))
+
+    // 难度过滤
+    const matchesLevels = selectedLevels.value.length === 0 || 
+      selectedLevels.value.includes(course.level)
+
+    return matchesSearch && matchesCategories && matchesLevels
+  })
+})
 
 // 加载课程列表
 const loadCourses = async (query = '') => {
   loading.value = true;
   try {
     console.log('Loading courses...');
-    const response = await CourseService.getAllCourses(query);
+    const response = await CourseService.getAllCourses(query, selectedCategories.value, selectedLevels.value);
     console.log('Courses response:', response);
     
     if (response.data && Array.isArray(response.data)) {
@@ -105,6 +182,11 @@ const handleSearch = () => {
   searchTimeout = setTimeout(() => {
     loadCourses(searchQuery.value);
   }, 300);
+}
+
+// 处理筛选变化
+const handleFilterChange = () => {
+  loadCourses(searchQuery.value);
 }
 
 // 加入课程
@@ -271,5 +353,49 @@ onMounted(() => {
   margin-top: 10px;
   display: flex;
   gap: 8px;
+}
+
+.filter-section {
+  padding: 16px 20px;
+  background-color: #fff;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-label {
+  color: #606266;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.filter-select {
+  width: 200px;
+}
+
+.category-tag {
+  border-radius: 12px;
+}
+
+@media (max-width: 768px) {
+  .filter-section {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .filter-group {
+    width: 100%;
+  }
+
+  .filter-select {
+    width: 100%;
+  }
 }
 </style> 

@@ -93,9 +93,11 @@
 
         <el-form-item label="课程难度" prop="level">
           <el-select v-model="courseForm.level" placeholder="请选择课程难度">
-            <el-option label="初级" value="BEGINNER" />
-            <el-option label="中级" value="INTERMEDIATE" />
-            <el-option label="高级" value="ADVANCED" />
+            <el-option label="H1" value="H1" />
+            <el-option label="H2" value="H2" />
+            <el-option label="H3" value="H3" />
+            <el-option label="H4" value="H4" />
+            <el-option label="H5" value="H5" />
           </el-select>
         </el-form-item>
 
@@ -132,7 +134,7 @@ const courseForm = reactive({
   target: '',
   description: '',
   categories: [],
-  level: 'BEGINNER',
+  level: 'H1',
   price: 0
 })
 

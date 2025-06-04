@@ -11,9 +11,7 @@
       <div v-if="course">
         <div class="course-video">
           <video 
-
             :src="course.videoUrl"
-
             controls 
             class="video-player"
             :poster="course.cover"
@@ -32,13 +30,23 @@
               <span>时长：{{ course.duration }}分钟</span>
             </div>
             <div class="meta-item">
-              <el-icon><UserFilled /></el-icon>
-              <span>适宜人群：{{ course.target }}</span>
+              <el-icon><Star /></el-icon>
+              <span>难度：{{ course.level }}</span>
             </div>
           </div>
           <div class="description">
             <h3>课程简介</h3>
             <p>{{ course.description }}</p>
+          </div>
+          <div class="course-tags" v-if="course.categories">
+            <el-tag 
+              v-for="category in course.categories.split(',')" 
+              :key="category"
+              class="category-tag"
+              type="success"
+            >
+              {{ category }}
+            </el-tag>
           </div>
           <div class="actions">
             <el-button 
@@ -46,7 +54,9 @@
               size="large" 
               @click="handleAction('startTraining')"
               :disabled="!isLoggedIn || !course.isEnrolled"
+              class="action-button"
             >
+              <el-icon><VideoPlay /></el-icon>
               开始训练
             </el-button>
             <el-button 
@@ -55,18 +65,21 @@
               @click="handleAction('enroll')"
               :disabled="!isLoggedIn"
               :class="{ 'is-joined': course.isEnrolled }"
+              class="action-button"
             >
               <el-icon><Plus /></el-icon>
               {{ course.isEnrolled ? '退出课程' : '加入课程' }}
             </el-button>
             <el-button 
-              type="danger" 
+              type="info" 
               size="large" 
               @click="handleAction('like')"
               :disabled="!isLoggedIn"
+              class="action-button like-button"
+              :class="{ 'is-liked': course.liked }"
             >
               <el-icon><Star /></el-icon>
-              {{ course.likes || 0 }} 点赞
+              <span class="like-count">{{ course.likes || 0 }}</span>
             </el-button>
           </div>
         </div>
@@ -80,8 +93,12 @@
               type="textarea"
               :rows="2"
               placeholder="写下你的评论..."
+              class="comment-textarea"
             />
-            <el-button type="primary" @click="submitComment">发表评论</el-button>
+            <el-button type="primary" @click="submitComment" class="submit-comment">
+              <el-icon><ChatDotRound /></el-icon>
+              发表评论
+            </el-button>
           </div>
           <div v-else class="login-prompt">
             <p>请登录后发表评论</p>
@@ -90,13 +107,11 @@
           
           <div class="comments-list">
             <div v-for="comment in comments" :key="comment.id" class="comment-item">
-              <el-avatar :size="32" :src="comment.userAvatar" />
+              <el-avatar :size="40" :src="comment.userAvatar" />
               <div class="comment-content">
                 <div class="comment-header">
                   <span class="username">{{ comment.username }}</span>
-
                   <span class="time">{{ formatTime(comment.createdAt) }}</span>
-
                 </div>
                 <p class="comment-text">{{ comment.content }}</p>
               </div>
@@ -114,12 +129,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Star, User, Timer, UserFilled, Plus } from '@element-plus/icons-vue'
+import { ArrowLeft, Star, User, Timer, UserFilled, Plus, VideoPlay, ChatDotRound } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import CourseService from '../../api/course'
-
 import CourseCommentService from '../../api/courseComment'
-
 
 const route = useRoute()
 const router = useRouter()
@@ -144,14 +157,14 @@ const loadCourseDetail = async () => {
       id: response.data.id,
       title: response.data.title,
       duration: response.data.duration,
-      target: response.data.targetAudience,
       description: response.data.description,
       videoUrl: response.data.videoUrl,
       cover: response.data.coverImage || response.data.thumbnail,
       author: response.data.author|| '未知',
-
       likes: response.data.likeCount || 0,
-      isEnrolled: response.data.isEnrolled || false
+      isEnrolled: response.data.isEnrolled || false,
+      level: response.data.level,
+      categories: response.data.category
     }
     console.log(course.value.videoUrl)
 
@@ -329,6 +342,10 @@ onMounted(() => {
   align-items: center;
   padding: 16px;
   border-bottom: 1px solid #eee;
+  background-color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .header h2 {
@@ -336,47 +353,66 @@ onMounted(() => {
   margin: 0;
   text-align: center;
   font-size: 18px;
+  color: #303133;
 }
 
 .content {
   flex: 1;
   overflow-y: auto;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
 }
 
-.course-cover {
+.course-video {
   width: 100%;
-  height: 200px;
+  margin-bottom: 24px;
+  border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
-.course-cover img {
+.video-player {
   width: 100%;
-  height: 100%;
+  aspect-ratio: 16/9;
   object-fit: cover;
 }
 
 .course-info {
-  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
 .title {
-  margin: 0 0 16px;
-  font-size: 24px;
+  margin: 0 0 20px;
+  font-size: 28px;
   color: #303133;
+  font-weight: 600;
 }
 
 .meta {
   display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #ebeef5;
 }
 
-.author {
+.meta-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 20px;
   color: #606266;
+}
+
+.meta-item .el-icon {
+  font-size: 18px;
+  color: #409eff;
 }
 
 .description {
@@ -384,55 +420,130 @@ onMounted(() => {
 }
 
 .description h3 {
-  margin: 0 0 12px;
-  font-size: 18px;
+  margin: 0 0 16px;
+  font-size: 20px;
   color: #303133;
+  font-weight: 600;
 }
 
 .description p {
   margin: 0;
-  line-height: 1.6;
+  line-height: 1.8;
   color: #606266;
+  font-size: 16px;
+}
+
+.course-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.category-tag {
+  font-size: 14px;
+  padding: 4px 12px;
+  border-radius: 16px;
 }
 
 .actions {
   display: flex;
   gap: 16px;
-  margin-bottom: 24px;
+  margin-top: 24px;
+}
+
+.action-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  font-size: 16px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.action-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.like-button {
+  background-color: #f4f4f5;
+  border-color: #f4f4f5;
+  color: #909399;
+}
+
+.like-button.is-liked {
+  background-color: #fef0f0;
+  border-color: #fef0f0;
+  color: #f56c6c;
+}
+
+.like-count {
+  font-weight: 600;
 }
 
 .comments-section {
-  padding: 20px;
-  border-top: 1px solid #eee;
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
 .comments-section h3 {
-  margin: 0 0 16px;
-  font-size: 18px;
+  margin: 0 0 20px;
+  font-size: 20px;
   color: #303133;
+  font-weight: 600;
 }
 
 .comment-input {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+}
+
+.comment-textarea {
+  margin-bottom: 16px;
+}
+
+.submit-comment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .login-prompt {
   text-align: center;
-  padding: 20px;
+  padding: 24px;
   background: #f5f7fa;
-  border-radius: 4px;
-  margin-bottom: 20px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.login-prompt p {
+  margin: 0 0 16px;
+  color: #606266;
 }
 
 .comments-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .comment-item {
   display: flex;
-  gap: 12px;
+  gap: 16px;
+  padding: 16px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.comment-item:hover {
+  background-color: #f0f2f5;
 }
 
 .comment-content {
@@ -442,23 +553,25 @@ onMounted(() => {
 .comment-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 4px;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
 .username {
-  font-weight: bold;
+  font-weight: 600;
   color: #303133;
 }
 
 .time {
   color: #909399;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .comment-text {
   margin: 0;
   color: #606266;
-  line-height: 1.5;
+  line-height: 1.6;
+  font-size: 15px;
 }
 
 .actions .el-button.is-joined {
@@ -469,5 +582,20 @@ onMounted(() => {
 .actions .el-button.is-joined:hover {
   background-color: #f78989;
   border-color: #f78989;
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding: 16px;
+  }
+  
+  .actions {
+    flex-direction: column;
+  }
+  
+  .meta {
+    flex-direction: column;
+    gap: 12px;
+  }
 }
 </style> 

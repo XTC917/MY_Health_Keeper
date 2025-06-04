@@ -42,7 +42,10 @@ public class TrainingSchedule {
     private Course course;
 
     @Column(name = "date", nullable = false)
-    private LocalDate date;
+    private LocalDate dateOriginal;  // 这是数据库中的date字段
+    
+    @Column(name = "schedule_date", nullable = false)
+    private LocalDate date;  // 这是数据库中的schedule_date字段，我们仍然使用date作为字段名
     
     @Column(name = "start_time")
     private LocalTime startTime;

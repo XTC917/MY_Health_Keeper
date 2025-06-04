@@ -408,9 +408,6 @@ const loadDailySchedule = async () => {
     // 尝试从API获取特定日期的训练计划
     const response = await TrainingService.getDailySchedule(key)
     dailySchedule.value = response.data || []
-    
-    // 更新本地数据
-    scheduleData.value[key] = dailySchedule.value
   } catch (error) {
     console.error('Error loading daily schedule:', error)
     // 如果API调用失败，使用本地数据
@@ -463,7 +460,7 @@ const initCharts = () => {
         }
       },
       legend: {
-        data: ['课程训练', '自定义训练']
+        data: ['训练时长']
       },
       xAxis: {
         type: 'category',
@@ -475,21 +472,11 @@ const initCharts = () => {
       },
       series: [
         {
-          name: '课程训练',
+          name: '训练时长',
           type: 'bar',
-          stack: 'total',
-          data: trainingStatistics.value.last12Weeks.map(item => item.courseMinutes),
+          data: trainingStatistics.value.last12Weeks.map(item => item.totalMinutes),
           itemStyle: {
             color: '#409EFF'
-          }
-        },
-        {
-          name: '自定义训练',
-          type: 'bar',
-          stack: 'total',
-          data: trainingStatistics.value.last12Weeks.map(item => item.customTrainingMinutes),
-          itemStyle: {
-            color: '#67C23A'
           }
         }
       ]
@@ -518,7 +505,7 @@ const initCharts = () => {
         }
       },
       legend: {
-        data: ['课程训练', '自定义训练']
+        data: ['训练时长']
       },
       xAxis: {
         type: 'category',
@@ -530,21 +517,12 @@ const initCharts = () => {
       },
       series: [
         {
-          name: '课程训练',
+          name: '训练时长',
           type: 'line',
-          data: trainingStatistics.value.last12Months.map(item => item.courseMinutes),
+          data: trainingStatistics.value.last12Months.map(item => item.totalMinutes),
           smooth: true,
           itemStyle: {
             color: '#409EFF'
-          }
-        },
-        {
-          name: '自定义训练',
-          type: 'line',
-          data: trainingStatistics.value.last12Months.map(item => item.customTrainingMinutes),
-          smooth: true,
-          itemStyle: {
-            color: '#67C23A'
           }
         }
       ]
@@ -552,6 +530,16 @@ const initCharts = () => {
     monthlyChartInstance.setOption(monthlyOption)
   }
 }
+
+// 监听窗口大小变化，调整图表大小
+window.addEventListener('resize', () => {
+  if (weeklyChartInstance) {
+    weeklyChartInstance.resize()
+  }
+  if (monthlyChartInstance) {
+    monthlyChartInstance.resize()
+  }
+})
 
 // 跳转到课程详情页
 const goToCourseDetail = (courseId) => {
@@ -581,13 +569,10 @@ const updateCompletion = async (item) => {
     // 重新加载统计数据
     await loadTrainingStatistics()
     
-    // 直接获取当天的训练时长
-    const todayKey = formatDateKey(selectedDate.value)
-    const durationResponse = await TrainingService.getDailyTrainingDuration(todayKey)
-    todayDuration.value = durationResponse.data || 0
-    
-    // 重新加载当天的训练计划
-    await loadDailySchedule()
+    // 更新今日训练时长
+    const today = formatDateKey(new Date())
+    const response = await TrainingService.getDailyTrainingDuration(today)
+    todayDuration.value = response.data || 0
   } catch (error) {
     console.error('Error updating completion status:', error)
     ElMessage.error('更新状态失败，请重试')

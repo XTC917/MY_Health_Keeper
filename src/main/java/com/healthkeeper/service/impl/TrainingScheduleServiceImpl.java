@@ -143,47 +143,90 @@ public class TrainingScheduleServiceImpl implements TrainingScheduleService {
                 System.err.println("获取当前用户失败: " + e.getMessage());
                 throw new RuntimeException("用户认证失败或会话已过期，请重新登录", e);
             }
-            
-            // 查找课程，添加错误处理
+              // 查找课程，添加错误处理
             Course course;
             try {
-                course = courseRepository.findById(request.getCourseId())
-                        .orElseThrow(() -> new RuntimeException("课程不存在"));
+                Long courseId = request.getCourseId();
+                if (courseId == null) {
+                    throw new RuntimeException("课程ID不能为空");
+                }
+                
+                System.out.println("尝试查找课程ID: " + courseId + ", 类型: " + courseId.getClass().getName());
+                course = courseRepository.findById(courseId)
+                        .orElseThrow(() -> new RuntimeException("课程不存在，ID: " + courseId));
                 System.out.println("找到课程: " + course.getTitle());
+            } catch (NumberFormatException e) {
+                System.err.println("课程ID格式不正确: " + e.getMessage());
+                throw new RuntimeException("课程ID必须是数字", e);
             } catch (Exception e) {
                 System.err.println("查找课程失败: " + e.getMessage());
-                throw new RuntimeException("无法找到指定课程", e);
+                throw new RuntimeException("无法找到指定课程: " + e.getMessage(), e);
             }
             
-            // 解析日期和时间
+            // 解析日期和时间，添加错误处理
             LocalDate date;
             LocalTime startTime;
             try {
                 date = parseDate(request.getDate());
+                System.out.println("解析后的日期: " + date);
+                
                 startTime = LocalTime.parse(request.getStartTime(), TIME_FORMATTER);
-                System.out.println("解析后的日期: " + date + ", 时间: " + startTime);
+                System.out.println("解析后的时间: " + startTime);
             } catch (Exception e) {
                 System.err.println("解析日期或时间失败: " + e.getMessage());
                 throw new RuntimeException("日期或时间格式不正确", e);
             }
+              // 额外检查日期是否为空
+            if (date == null) {
+                throw new RuntimeException("日期解析后为空，无法保存训练计划");
+            }
             
-            // 创建训练计划对象
+            // 确保时间不为空
+            if (startTime == null) {
+                throw new RuntimeException("时间解析后为空，无法保存训练计划");
+            }
+            
+            // 创建训练计划对象前再次检查字段
+            System.out.println("准备构建训练计划对象:");
+            System.out.println("- 用户: " + (currentUser != null ? currentUser.getId() : "null"));
+            System.out.println("- 课程: " + (course != null ? course.getId() : "null"));
+            System.out.println("- 日期: " + date);
+            System.out.println("- 时间: " + startTime);
+              // 创建并保存训练计划
             LocalDate today = LocalDate.now();
             TrainingSchedule schedule = TrainingSchedule.builder()
                     .user(currentUser)
                     .course(course)
-                    .date(date)
+                    .date(date)        // schedule_date字段
+                    .dateOriginal(date) // date字段，与schedule_date保持一致
                     .startTime(startTime)
                     .completed(false)
                     .createdAt(today)
-                    .updatedAt(today)
+                    .updatedAt(today)   // 添加updatedAt字段赋值
                     .build();
             
-            // 保存训练计划
+            // 再次验证对象状态
+            if (schedule.getDate() == null) {
+                throw new RuntimeException("构建训练计划对象后发现日期为空，字段映射可能有问题");
+            }
+            
+            System.out.println("准备保存训练计划: " + schedule);
+            
+            // 在SQL执行前确认实体状态
+            System.out.println("检查训练计划对象字段值:");
+            System.out.println("- schedule.getId(): " + schedule.getId());
+            System.out.println("- schedule.getUser().getId(): " + schedule.getUser().getId());
+            System.out.println("- schedule.getCourse().getId(): " + schedule.getCourse().getId());            System.out.println("- schedule.getDate(): " + schedule.getDate());
+            System.out.println("- schedule.getDate()类型: " + (schedule.getDate() != null ? schedule.getDate().getClass().getName() : "null"));
+            System.out.println("- schedule.getDateOriginal(): " + schedule.getDateOriginal());
+            System.out.println("- schedule.getDateOriginal()类型: " + (schedule.getDateOriginal() != null ? schedule.getDateOriginal().getClass().getName() : "null"));System.out.println("- schedule.getStartTime(): " + schedule.getStartTime());
+            System.out.println("- schedule.isCompleted(): " + schedule.isCompleted());
+            System.out.println("- schedule.getCreatedAt(): " + schedule.getCreatedAt());
+            System.out.println("- schedule.getUpdatedAt(): " + schedule.getUpdatedAt());
+            
             TrainingSchedule savedSchedule = trainingScheduleRepository.save(schedule);
             System.out.println("保存成功，ID: " + savedSchedule.getId());
-            
-            return convertToDto(savedSchedule);
+              return convertToDto(savedSchedule);
         } catch (Exception e) {
             System.err.println("添加训练计划失败: " + e.getMessage());
             e.printStackTrace();

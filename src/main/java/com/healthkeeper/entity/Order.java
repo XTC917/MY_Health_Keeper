@@ -41,6 +41,9 @@ public class Order {
     @Column(name = "shipped_at")
     private LocalDateTime shippedAt;
 
+    @Column(name = "shipping_address")
+    private String shippingAddress;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

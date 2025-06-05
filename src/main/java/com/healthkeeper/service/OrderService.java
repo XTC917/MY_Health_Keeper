@@ -143,6 +143,11 @@ public class OrderService {
             order.setStatus(Order.OrderStatus.PENDING);
             BigDecimal totalAmount = BigDecimal.ZERO;
             
+            // 设置收货地址
+            if (orderData.containsKey("shippingAddress")) {
+                order.setShippingAddress((String) orderData.get("shippingAddress"));
+            }
+            
             for (Map<String, Object> item : items) {
                 Long productId = Long.valueOf(item.get("productId").toString());
                 int quantity = Integer.parseInt(item.get("quantity").toString());
@@ -314,6 +319,7 @@ public class OrderService {
         dto.setTrackingNumber(order.getTrackingNumber());
         dto.setShippedAt(order.getShippedAt());
         dto.setCreatedAt(order.getCreatedAt());
+        dto.setShippingAddress(order.getShippingAddress());
         dto.setItems(new ArrayList<>());
 
         for (OrderItem item : order.getItems()) {

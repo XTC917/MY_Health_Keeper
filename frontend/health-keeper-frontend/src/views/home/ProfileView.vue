@@ -27,6 +27,10 @@
           <el-icon><DataLine /></el-icon>
           <span>健康数据</span>
         </div>
+        <div class="menu-item" @click="goToPersonalizedDiet">
+          <el-icon><Food /></el-icon>
+          <span>个性化食谱</span>
+        </div>
       </el-card>
       
       <div class="logout-button">
@@ -50,7 +54,8 @@ import {
   VideoCamera, 
   Goods, 
   List, 
-  DataLine 
+  DataLine,
+  Food
 } from '@element-plus/icons-vue'
 import AuthService from '../../api/auth'
 import UserService from "@/api/user";
@@ -62,7 +67,8 @@ export default {
     VideoCamera,
     Goods,
     List,
-    DataLine
+    DataLine,
+    Food
   },
   setup() {
     const router = useRouter()
@@ -97,6 +103,10 @@ export default {
     
     const goToHealthData = () => {
       router.push('/home/health-data')
+    }
+    
+    const goToPersonalizedDiet = () => {
+      router.push('/home/personalized-diet')
     }
     
     const goToLogin = () => {
@@ -137,6 +147,7 @@ export default {
       goToMyProducts,
       goToOrders,
       goToHealthData,
+      goToPersonalizedDiet,
       goToLogin,
       handleLogout
     }

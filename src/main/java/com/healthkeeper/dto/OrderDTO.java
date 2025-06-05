@@ -15,4 +15,5 @@ public class OrderDTO {
     private String trackingNumber;
     private LocalDateTime shippedAt;
     private LocalDateTime createdAt;
+    private String shippingAddress;
 } 

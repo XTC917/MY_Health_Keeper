@@ -72,6 +72,12 @@ const routes = [
         component: () => import('../views/home/HealthDataView.vue')
       },
       {
+        path: 'personalized-diet',
+        name: 'PersonalizedDiet',
+        component: () => import('../views/home/PersonalizedDietView.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: 'my-courses',
         name: 'MyCourses',
         component: () => import('../views/home/MyCoursesView.vue')

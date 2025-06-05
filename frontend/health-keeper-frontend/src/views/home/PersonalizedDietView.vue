@@ -99,13 +99,7 @@
 import { ref, computed } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import axios from 'axios'
-
-// 添加axios基础配置
-const api = axios.create({
-  baseURL: 'http://localhost:8081',
-  timeout: 30000
-})
+import { DietService } from '@/api/diet'
 
 const activeTab = ref('calorie')
 const searchQuery = ref('')
@@ -131,27 +125,30 @@ const dietPlanForm = ref({
 
 // 计算属性
 const totalCalories = computed(() => {
-  if (!dietPlan.value) return 0
-  return dietPlan.value.reduce((sum, meal) => sum + meal.totalCalories, 0)
+  if (!dietPlan.value || !Array.isArray(dietPlan.value)) return 0
+  return dietPlan.value.reduce((sum, meal) => sum + (meal.totalCalories || 0), 0)
 })
 
 const totalProtein = computed(() => {
-  if (!dietPlan.value) return 0
+  if (!dietPlan.value || !Array.isArray(dietPlan.value)) return 0
   return dietPlan.value.reduce((sum, meal) => {
+    if (!meal.foods || !Array.isArray(meal.foods)) return sum
     return sum + meal.foods.reduce((mealSum, food) => mealSum + (food.protein || 0), 0)
   }, 0)
 })
 
 const totalFat = computed(() => {
-  if (!dietPlan.value) return 0
+  if (!dietPlan.value || !Array.isArray(dietPlan.value)) return 0
   return dietPlan.value.reduce((sum, meal) => {
+    if (!meal.foods || !Array.isArray(meal.foods)) return sum
     return sum + meal.foods.reduce((mealSum, food) => mealSum + (food.fat || 0), 0)
   }, 0)
 })
 
 const totalCarbs = computed(() => {
-  if (!dietPlan.value) return 0
+  if (!dietPlan.value || !Array.isArray(dietPlan.value)) return 0
   return dietPlan.value.reduce((sum, meal) => {
+    if (!meal.foods || !Array.isArray(meal.foods)) return sum
     return sum + meal.foods.reduce((mealSum, food) => mealSum + (food.carbs || 0), 0)
   }, 0)
 })
@@ -164,27 +161,32 @@ const handleSearch = async () => {
   }
 
   try {
-    const response = await api.get('/api/food/search', {
-      params: {
-        query: searchQuery.value,
-        category: selectedCategory.value
-      }
-    })
+    const response = await DietService.searchFood(searchQuery.value, selectedCategory.value)
     searchResults.value = response.data
   } catch (error) {
-    ElMessage.error('搜索失败：' + (error.response?.data?.message || '未知错误'))
+    console.error('搜索食物失败:', error)
+    ElMessage.error('搜索食物失败：' + (error.response?.data?.message || '未知错误'))
   }
 }
 
 const generateDietPlan = async () => {
+  if (!dietPlanForm.value.targetCalories) {
+    ElMessage.warning('请输入目标热量')
+    return
+  }
   generating.value = true
   try {
-    const response = await api.post('/api/diet/plan', {
-      targetCalories: dietPlanForm.value.targetCalories,
-      preferences: dietPlanForm.value.preferences
-    })
-    dietPlan.value = response.data.meals || []
+    const response = await DietService.generateDietPlan(
+      dietPlanForm.value.targetCalories,
+      dietPlanForm.value.preferences
+    )
+    if (response.data && response.data.meals) {
+      dietPlan.value = response.data.meals
+    } else {
+      ElMessage.error('返回数据格式不正确')
+    }
   } catch (error) {
+    console.error('生成饮食计划失败:', error)
     ElMessage.error('生成饮食计划失败：' + (error.response?.data?.message || '未知错误'))
   } finally {
     generating.value = false

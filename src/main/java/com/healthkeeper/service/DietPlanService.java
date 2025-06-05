@@ -118,16 +118,8 @@ public class DietPlanService {
             
             // 验证和补充食物信息
             List<Map<String, Object>> meals = (List<Map<String, Object>>) dietPlan.get("meals");
-            if (meals == null) {
-                throw new RuntimeException("AI返回的饮食计划格式不正确");
-            }
-            
             for (Map<String, Object> meal : meals) {
                 List<Map<String, Object>> mealFoods = (List<Map<String, Object>>) meal.get("foods");
-                if (mealFoods == null) {
-                    continue;
-                }
-                
                 for (Map<String, Object> food : mealFoods) {
                     String foodName = (String) food.get("name");
                     Optional<Food> foodInfo = foods.stream()
@@ -143,9 +135,9 @@ public class DietPlanService {
                 }
             }
             
-            return Map.of("meals", meals);
+            return dietPlan;
         } catch (Exception e) {
-            throw new RuntimeException("解析饮食计划失败: " + e.getMessage(), e);
+            throw new RuntimeException("解析饮食计划失败", e);
         }
     }
 } 

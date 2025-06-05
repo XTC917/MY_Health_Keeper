@@ -30,6 +30,20 @@
         </div>
       </div>
 
+      <div class="shipping-address">
+        <h2>收货地址</h2>
+        <el-form :model="addressForm" label-width="100px">
+          <el-form-item label="收货地址" required>
+            <el-input
+              v-model="addressForm.address"
+              type="textarea"
+              :rows="3"
+              placeholder="请输入详细的收货地址，包括省市区、街道、门牌号等信息"
+            />
+          </el-form-item>
+        </el-form>
+      </div>
+
       <div class="payment-section">
         <h2>支付方式</h2>
         <el-radio-group v-model="paymentMethod">
@@ -60,6 +74,7 @@
           size="large" 
           @click="confirmOrder"
           :loading="submitting"
+          :disabled="!addressForm.address"
         >
           确认支付
         </el-button>
@@ -86,15 +101,24 @@ export default {
     const loading = ref(false);
     const error = ref(null);
     const submitting = ref(false);
+    const addressForm = ref({
+      address: ''
+    });
 
     const confirmOrder = async () => {
+      if (!addressForm.value.address) {
+        ElMessage.warning('请填写收货地址');
+        return;
+      }
+
       try {
         submitting.value = true;
         const orderData = {
           items: items.value.map(item => ({
             productId: item.productId,
             quantity: item.quantity
-          }))
+          })),
+          shippingAddress: addressForm.value.address
         };
         console.log('Creating order with data:', orderData);
         const response = await orderApi.createOrder(orderData);
@@ -159,6 +183,7 @@ export default {
       loading,
       error,
       submitting,
+      addressForm,
       confirmOrder,
       goBack
     };
@@ -230,6 +255,13 @@ export default {
 .subtotal {
   color: #f56c6c;
   font-weight: bold;
+}
+
+.shipping-address {
+  margin-bottom: 30px;
+  padding: 20px;
+  border: 1px solid #eee;
+  border-radius: 4px;
 }
 
 .payment-section {

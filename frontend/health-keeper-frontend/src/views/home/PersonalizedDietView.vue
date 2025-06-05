@@ -101,6 +101,12 @@ import { Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
 
+// 添加axios基础配置
+const api = axios.create({
+  baseURL: 'http://localhost:8081',
+  timeout: 30000
+})
+
 const activeTab = ref('calorie')
 const searchQuery = ref('')
 const selectedCategory = ref('')
@@ -158,7 +164,7 @@ const handleSearch = async () => {
   }
 
   try {
-    const response = await axios.get('/api/food/search', {
+    const response = await api.get('/api/food/search', {
       params: {
         query: searchQuery.value,
         category: selectedCategory.value
@@ -173,11 +179,11 @@ const handleSearch = async () => {
 const generateDietPlan = async () => {
   generating.value = true
   try {
-    const response = await axios.post('/api/diet/plan', {
+    const response = await api.post('/api/diet/plan', {
       targetCalories: dietPlanForm.value.targetCalories,
       preferences: dietPlanForm.value.preferences
     })
-    dietPlan.value = response.data
+    dietPlan.value = response.data.meals || []
   } catch (error) {
     ElMessage.error('生成饮食计划失败：' + (error.response?.data?.message || '未知错误'))
   } finally {

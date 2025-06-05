@@ -28,7 +28,7 @@
       <div class="cart-items">
         <div v-for="item in cart.items" :key="item.id" class="cart-item">
           <el-checkbox v-model="item.selected" @change="handleItemSelect" />
-          <div class="product-info">
+            <div class="product-info">
             <img :src="item.productImage" :alt="item.productName" class="product-image">
             <div class="product-details">
               <h3>{{ item.productName }}</h3>
@@ -48,7 +48,7 @@
           <el-button type="danger" @click="removeItem(item.id)" icon="Delete" circle />
         </div>
       </div>
-
+      
       <div class="cart-summary">
         <div class="selected-info">
           已选择 {{ selectedCount }} 件商品
@@ -158,12 +158,12 @@ export default {
           items: cart.value.items
             .filter(item => item.selected)
             .map(item => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              productName: item.productName,
-              price: item.price,
-              imageUrl: item.productImage
-            }))
+            productId: item.productId,
+            quantity: item.quantity,
+            productName: item.productName,
+            price: item.price,
+            imageUrl: item.productImage
+          }))
         };
         sessionStorage.setItem('cartOrder', JSON.stringify(cartData));
         // 跳转到结算页面

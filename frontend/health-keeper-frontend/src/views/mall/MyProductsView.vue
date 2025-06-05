@@ -166,6 +166,13 @@
               </div>
             </template>
           </el-table-column>
+          <el-table-column label="收货地址" min-width="200">
+            <template #default="scope">
+              <div class="shipping-address">
+                {{ scope.row.shippingAddress || '暂无地址信息' }}
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column prop="status" label="状态" width="120">
             <template #default="scope">
               <el-tag :type="getStatusType(scope.row.status)">
@@ -631,5 +638,12 @@ export default {
 .order-item-price {
   color: #f56c6c;
   font-size: 0.9em;
+}
+
+.shipping-address {
+  color: #666;
+  font-size: 0.9em;
+  line-height: 1.4;
+  word-break: break-all;
 }
 </style> 

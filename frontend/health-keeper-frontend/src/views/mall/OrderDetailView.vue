@@ -42,6 +42,13 @@
       <div class="order-actions">
         <el-button @click="$router.push('/home/my-orders')">返回订单列表</el-button>
         <el-button 
+          v-if="order.status === 'SHIPPED'"
+          type="success" 
+          @click="confirmReceipt"
+        >
+          确认收货
+        </el-button>
+        <el-button 
           type="danger" 
           @click="confirmDelete"
         >
@@ -82,6 +89,28 @@ export default {
         console.error('Error fetching order details:', error);
         console.error('Error response:', error.response);
         ElMessage.error('获取订单详情失败: ' + (error.response?.data?.message || error.message));
+      }
+    },
+    async confirmReceipt() {
+      try {
+        await ElMessageBox.confirm(
+          '确认已收到商品？',
+          '确认收货',
+          {
+            confirmButtonText: '确认',
+            cancelButtonText: '取消',
+            type: 'info',
+          }
+        );
+        
+        await orderApi.confirmOrderReceipt(this.order.id);
+        ElMessage.success('确认收货成功');
+        await this.fetchOrder();
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error('Error confirming order receipt:', error);
+          ElMessage.error('确认收货失败: ' + (error.response?.data?.message || error.message));
+        }
       }
     },
     async confirmDelete() {

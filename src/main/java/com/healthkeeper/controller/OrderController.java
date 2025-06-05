@@ -191,4 +191,26 @@ public class OrderController {
                     .body(new ErrorResponse("Failed to ship order: " + e.getMessage()));
         }
     }
+
+    @PostMapping("/{id}/confirm")
+    public ResponseEntity<?> confirmOrderReceipt(
+            @PathVariable Long id,
+            Authentication authentication) {
+        try {
+            log.info("Received order confirmation request for order: {}", id);
+            
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            User user = userRepository.findById(userDetails.getId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            OrderDTO updatedOrder = orderService.confirmOrderReceipt(id, user);
+            log.info("Successfully confirmed order receipt for order: {}", id);
+            
+            return ResponseEntity.ok(updatedOrder);
+        } catch (Exception e) {
+            log.error("Error confirming order receipt for order: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Failed to confirm order receipt: " + e.getMessage()));
+        }
+    }
 } 

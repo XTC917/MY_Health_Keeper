@@ -8,10 +8,10 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface FoodRepository extends JpaRepository<Food, Long> {
-    @Query("SELECT f FROM Food f WHERE LOWER(f.name) LIKE LOWER(CONCAT('%', :query, '%'))")
+    @Query("SELECT f FROM Food f WHERE LOWER(f.name) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(f.nameEn) LIKE LOWER(CONCAT('%', :query, '%'))")
     List<Food> searchByName(@Param("query") String query);
 
-    @Query("SELECT f FROM Food f WHERE LOWER(f.name) LIKE LOWER(CONCAT('%', :query, '%')) AND f.category = :category")
+    @Query("SELECT f FROM Food f WHERE (LOWER(f.name) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(f.nameEn) LIKE LOWER(CONCAT('%', :query, '%'))) AND f.category = :category")
     List<Food> searchByNameAndCategory(@Param("query") String query, @Param("category") String category);
 
     List<Food> findByCategory(String category);

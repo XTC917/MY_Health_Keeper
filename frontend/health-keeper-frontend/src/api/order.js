@@ -48,5 +48,10 @@ export const orderApi = {
     shipOrder: (orderId, trackingNumber) => {
         console.log('Shipping order:', { orderId, trackingNumber });
         return api.post(`/orders/${orderId}/ship`, { trackingNumber });
+    },
+
+    confirmOrderReceipt: (orderId) => {
+        console.log('Confirming order receipt:', orderId);
+        return api.post(`/orders/${orderId}/confirm`);
     }
 }; 

@@ -310,6 +310,37 @@ public class OrderService {
         }
     }
 
+    @Transactional
+    public OrderDTO confirmOrderReceipt(Long orderId, User user) {
+        try {
+            log.info("Confirming order receipt - Order ID: {}, User: {}", orderId, user.getUsername());
+            
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> {
+                        log.error("Order not found: {}", orderId);
+                        return new RuntimeException("Order not found");
+                    });
+            
+            if (!order.getUser().getId().equals(user.getId())) {
+                log.error("Unauthorized confirmation attempt - Order: {}, User: {}", orderId, user.getUsername());
+                throw new RuntimeException("Unauthorized confirmation attempt");
+            }
+            
+            if (order.getStatus() != Order.OrderStatus.SHIPPED) {
+                throw new RuntimeException("Order must be in SHIPPED status to confirm receipt");
+            }
+            
+            order.setStatus(Order.OrderStatus.DELIVERED);
+            Order updatedOrder = orderRepository.save(order);
+            log.info("Successfully confirmed order receipt - Order ID: {}", orderId);
+            
+            return convertToDTO(updatedOrder);
+        } catch (Exception e) {
+            log.error("Error confirming order receipt - Order ID: {}, User: {}", orderId, user.getUsername(), e);
+            throw e;
+        }
+    }
+
     private OrderDTO convertToDTO(Order order) {
         OrderDTO dto = new OrderDTO();
         dto.setId(order.getId());
